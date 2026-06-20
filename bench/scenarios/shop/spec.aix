@@ -1,0 +1,5 @@
+E user { name:str!, email:str! }
+E product { name:str!<=100, price:int!, stock:int=0, seller:ref:user, created:ts=now }
+E order { product:ref:product, qty:int!, buyer:ref:user*, created:ts=now }
+R product { list, get, create, update:[name,price,stock], delete, auth }
+R order { list:mine, get, create, delete, auth }

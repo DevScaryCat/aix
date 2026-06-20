@@ -1,0 +1,5 @@
+# Intentionally wrong — to show the machine catches it, not a human.
+E post { title:str!<=200, author:ref:user, created:ts=now }
+R post { list:mine, get, create, update:[titel], delete }
+# bugs: (1) ref:user — no `user` entity. (2) update:[titel] typo, not a field.
+# (3) list:mine but no `auth` — "me" is undefined.

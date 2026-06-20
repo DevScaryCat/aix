@@ -1,0 +1,3 @@
+E user { name:str! }
+E todo { title:str!<=200, done:bool=false, owner:ref:user, created:ts=now }
+R todo { list:mine, get, create, update:[title,done], delete, auth }
