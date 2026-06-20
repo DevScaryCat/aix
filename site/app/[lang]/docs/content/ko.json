@@ -1,0 +1,144 @@
+{
+  "nav": {
+    "overview": "개요",
+    "entities": "엔티티 & 필드",
+    "routes": "라우트",
+    "runtime": "런타임 규칙",
+    "errors": "검증기 오류",
+    "compare": "다른 도구와 비교"
+  },
+  "overview": {
+    "title": "aix 언어",
+    "lead": "aix는 백엔드를 위한 작은 선언형 언어입니다. 엔티티(데이터 형태)와 라우트(노출할 동작)를 선언하면, 고정된 런타임이 그 명세를 살아있는 CRUD API로 해석합니다. 코드는 생성되지 않으며, 결정론적 검증기가 명세를 실행하기 전에 정확성을 증명합니다.",
+    "twoKinds": "모든 .aix 파일은 한 줄에 하나의 선언을 가지며, 선언은 정확히 두 종류뿐입니다. 중괄호는 선택 사항이고, #으로 주석을 시작합니다.",
+    "entityComment": "entity — 데이터 형태",
+    "routeComment": "routes — 노출할 동작",
+    "next": "엔티티 & 필드부터 시작하거나, aix가 다른 도구와 어떻게 비교되는지로 건너뛰세요."
+  },
+  "entities": {
+    "title": "엔티티 & 필드",
+    "lead": "필드는 쉼표로 구분되며 고정된 좌에서 우 순서를 따르므로, 기계가 100% 결정론적으로 파싱합니다.",
+    "grammar": "name:type[:ref][!][*][~][<=n][=default]",
+    "partsTitle": "필드 구성 요소 (좌에서 우)",
+    "colPart": "구성 요소",
+    "colMeaning": "의미",
+    "parts": {
+      "name:type": "필드 이름과 타입 (필수)",
+      ":ref": "ref인 경우, 가리키는 엔티티",
+      "!": "필수",
+      "*": "소유자 표시 (ref 전용)",
+      "~": "유일값 (str / int)",
+      "<=n": "최대 길이 (str) / 최대값 (int)",
+      "=default": "기본값"
+    },
+    "typesTitle": "타입",
+    "colType": "타입",
+    "types": {
+      "str": "문자열",
+      "int": "정수",
+      "bool": "참 / 거짓",
+      "ts": "타임스탬프 (=now, 또는 단축형 name@, 생성 시각을 설정)",
+      "ref": "다른 엔티티에 대한 참조",
+      "enum[a|b|c]": "허용된 값들의 닫힌 집합"
+    },
+    "shorthandTitle": "단축형 (출력 토큰 절약)",
+    "colShort": "단축형",
+    "colLong": "의미",
+    "shorthand": {
+      "author>user": "author:ref:user",
+      "created@": "created:ts=now",
+      "email:str!~": "필수, 유일 문자열"
+    }
+  },
+  "routes": {
+    "title": "라우트",
+    "lead": "엔티티가 이미 정의되어 있어야 합니다. 라우트는 HTTP로 노출할 동작들을 나열합니다.",
+    "colOp": "동작",
+    "colHttp": "HTTP",
+    "colMeaning": "의미",
+    "ops": {
+      "list": "모든 행 나열",
+      "list:mine": "로그인한 사용자의 행만",
+      "get": "id로 하나 가져오기",
+      "create": "생성 (소유자 자동 주입)",
+      "update:[a,b]": "나열된 필드만 수정",
+      "delete": "id로 하나 삭제",
+      "auth": "이 리소스는 로그인이 필요함",
+      "private": "단일 행 get/update/delete는 소유자 전용",
+      "filter:[a,b]": "쿼리 파라미터를 통한 동등 필터",
+      "sort:f / sort:f:desc": "필드 기준으로 결과 정렬",
+      "page": "?limit & ?offset을 통한 페이지네이션"
+    },
+    "inferTitle": "추론",
+    "infer": "list:mine은 auth와 private를 모두 함의하므로 직접 쓰지 않습니다. 단독 private도 auth를 함의합니다. 타이핑이 줄고, 결합된 토큰을 빠뜨릴 수 없습니다."
+  },
+  "runtime": {
+    "title": "런타임 규칙",
+    "lead": "고정된 런타임이 검증된 명세를 요청마다 어떻게 해석하는지:",
+    "rules": [
+      "Auth — auth가 있으면 x-user-id 헤더가 없는 요청은 401을 받습니다.",
+      "소유자 주입 — create는 항상 소유자 ref를 로그인한 사용자로 설정하며, 클라이언트가 위조할 수 없습니다.",
+      "소유자 범위 (private) — 다른 사용자의 행에 대한 get/update/delete는 404를 반환합니다 (존재 여부 노출 없음).",
+      "참조 무결성 — 소유자가 아닌 ref는 존재하는 행을 가리켜야 하며, 그렇지 않으면 400입니다.",
+      "검증 — 필수, 타입, 최대 길이/값, enum 멤버십이 강제됩니다 (400).",
+      "유일값 — ~ 필드는 중복 값을 409로 거부합니다.",
+      "필드 잠금 — update:[...]에 없는 필드를 변경하면 403을 반환합니다.",
+      "기본값 — 필드가 없을 때 적용되며, now / @는 현재 ISO 타임스탬프가 됩니다.",
+      "쿼리 — filter (동등, 선언된 필드만), 그다음 sort, 그다음 page."
+    ]
+  },
+  "errors": {
+    "title": "검증기 오류 코드",
+    "lead": "aix check는 명세를 100% 기계적으로 판정합니다. 오류를 반환하지 않으면 런타임이 반드시 실행할 수 있음이 보장됩니다. 오타에는 결정론적인 \"혹시 …를 의도하셨나요?\" 힌트가 제공됩니다.",
+    "colCode": "코드",
+    "colCatches": "잡아내는 것",
+    "codes": {
+      "DUP_FIELD": "한 엔티티 내 필드 이름 중복",
+      "BAD_REF": "ref 대상이 정의된 엔티티가 아님",
+      "EMPTY_ENUM": "값 없이 선언된 enum[]",
+      "BAD_DEFAULT": "기본값이 타입과 일치하지 않음 (=now는 ts 전용; enum 기본값은 멤버여야 함)",
+      "BAD_MAX": "str/int가 아닌 타입에 <= 사용",
+      "BAD_OWNER": "ref가 아닌 필드에 * 사용",
+      "BAD_UNIQUE": "str/int가 아닌 타입에 ~ 사용",
+      "MULTI_OWNER": "한 엔티티에 둘 이상의 * 소유자",
+      "NO_ENTITY": "라우트가 정의되지 않은 엔티티를 가리킴",
+      "BAD_UPDATE": "update:[X]에서 X가 실제 필드가 아님",
+      "OWNER_LOCKED": "소유자 ref는 update:[...]에 들어갈 수 없음 (소유권은 불변)",
+      "PRIVATE_LIST": "public list와 함께 쓰인 private — list:mine을 사용하세요",
+      "OWNER_CREATE_NO_AUTH": "소유자 ref가 있는 create는 소유자를 주입하기 위해 auth가 필요함",
+      "FILTER_FIELD": "filter:[X]에서 X가 실제 필드가 아님",
+      "SORT_FIELD": "sort 필드가 없거나 str/int/ts가 아님",
+      "NO_OWNER": "list:mine/private이지만 엔티티에 ref가 없음",
+      "AMBIGUOUS_OWNER": "여러 ref가 있고 * 표시가 없는 list:mine/private"
+    }
+  },
+  "compare": {
+    "title": "aix vs 다른 도구",
+    "lead": "aix는 라이브러리가 아니라 작은 언어입니다. 동일한 소유자 범위 블로그 백엔드 — 로그인, 소유권, 검증, 필드 잠금 수정 — 가 aix로는 세 줄입니다. 아래의 일반적인 스택들은 실제이며 간결하게 유지했지만, 대부분은 기계가 정확성을 증명할 수 없는 명령형 접착 코드입니다.",
+    "aixLabel": "aix — 백엔드 전체",
+    "colSame": "동일한 백엔드를 일반적인 방식으로 작성",
+    "items": [
+      {
+        "name": "Prisma + Next.js",
+        "note": "Prisma 스키마와, 연산마다 하나씩 작성한 App-Router 라우트 핸들러에 zod 검증, 인증 확인, 소유권 범위 지정을 모두 손으로 작성합니다.",
+        "takeaway": "5개 파일에 걸친 ~300 토큰의 접착 코드 — 모든 줄이 인증이나 소유권을 잘못 다룰 수 있는 지점이며, 그러지 않았다는 정적 검사도 없습니다."
+      },
+      {
+        "name": "Ruby on Rails",
+        "note": "마이그레이션, ActiveRecord 모델, strong params를 갖춘 컨트롤러, 인증용 before_action, 그리고 current_user로의 수동 범위 지정.",
+        "takeaway": "컨벤션이 일부 보일러플레이트를 없애지만, 소유권과 필드 잠금은 여전히 손으로 작성한 정책입니다."
+      },
+      {
+        "name": "Django + DRF",
+        "note": "모델, serializer, ViewSet, permission 클래스, 그리고 요청 사용자로 범위가 지정된 get_queryset.",
+        "takeaway": "aix가 한 줄로 명시하는 것을 위해 올바르게 엮어야 하는 다섯 개의 움직이는 부품."
+      },
+      {
+        "name": "Raw SQL + handlers",
+        "note": "DDL과, 자체적으로 파싱, 검증, WHERE owner = ? 범위 지정을 수행하는 연산별 손수 작성 엔드포인트.",
+        "takeaway": "최대의 제어력 — 그리고 조용한 인가 버그에 대한 최대의 노출 면적."
+      }
+    ],
+    "closing": "모든 스택에서 검증과 인가는 어떤 도구도 정확성을 검사하지 않는 명령형 코드입니다. aix에서는 이것들이 선언이며, API가 요청을 처리하기 전에 결정론적 검증기가 증명합니다 — 이것이 바로 이를 언어로 만든 핵심 이유입니다."
+  }
+}

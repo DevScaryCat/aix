@@ -1,0 +1,144 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "entities": "Entities & fields",
+    "routes": "Routes",
+    "runtime": "Runtime rules",
+    "errors": "Verifier errors",
+    "compare": "vs other tools"
+  },
+  "overview": {
+    "title": "The aix language",
+    "lead": "aix is a tiny declarative language for backends. You declare entities (data shapes) and routes (exposed actions); a fixed runtime interprets the spec as a live CRUD API. No code is generated — and a deterministic verifier proves a spec correct before it ever runs.",
+    "twoKinds": "Every .aix file has one declaration per line, and exactly two kinds. Braces are optional; # starts a comment.",
+    "entityComment": "entity — a data shape",
+    "routeComment": "routes — the actions to expose",
+    "next": "Start with Entities & fields, or jump to how aix compares to other tools."
+  },
+  "entities": {
+    "title": "Entities & fields",
+    "lead": "Fields are comma-separated and follow a fixed left-to-right order, so a machine parses them 100% deterministically.",
+    "grammar": "name:type[:ref][!][*][~][<=n][=default]",
+    "partsTitle": "Field parts (left to right)",
+    "colPart": "part",
+    "colMeaning": "meaning",
+    "parts": {
+      "name:type": "field name and type (required)",
+      ":ref": "for a ref, the entity it points to",
+      "!": "required",
+      "*": "owner marker (ref only)",
+      "~": "unique (str / int)",
+      "<=n": "max length (str) / max value (int)",
+      "=default": "default value"
+    },
+    "typesTitle": "Types",
+    "colType": "type",
+    "types": {
+      "str": "string",
+      "int": "integer",
+      "bool": "true / false",
+      "ts": "timestamp (=now, or the shorthand name@, sets creation time)",
+      "ref": "reference to another entity",
+      "enum[a|b|c]": "a closed set of allowed values"
+    },
+    "shorthandTitle": "Shorthand (fewer tokens to emit)",
+    "colShort": "short",
+    "colLong": "means",
+    "shorthand": {
+      "author>user": "author:ref:user",
+      "created@": "created:ts=now",
+      "email:str!~": "required, unique string"
+    }
+  },
+  "routes": {
+    "title": "Routes",
+    "lead": "The entity must already be defined. A route lists the actions to expose over HTTP.",
+    "colOp": "action",
+    "colHttp": "HTTP",
+    "colMeaning": "meaning",
+    "ops": {
+      "list": "list all rows",
+      "list:mine": "only the logged-in user's rows",
+      "get": "fetch one by id",
+      "create": "create (owner injected automatically)",
+      "update:[a,b]": "update only the listed fields",
+      "delete": "delete one by id",
+      "auth": "this resource requires login",
+      "private": "single-row get/update/delete are owner-only",
+      "filter:[a,b]": "equality filters via query params",
+      "sort:f / sort:f:desc": "order results by a field",
+      "page": "pagination via ?limit & ?offset"
+    },
+    "inferTitle": "Inference",
+    "infer": "list:mine implies both auth and private — you don't write them. A standalone private implies auth too. Less to type, and the coupled tokens can't be forgotten."
+  },
+  "runtime": {
+    "title": "Runtime rules",
+    "lead": "How the fixed runtime interprets a verified spec, per request:",
+    "rules": [
+      "Auth — with auth, a request missing the x-user-id header gets 401.",
+      "Owner injection — create always sets the owner ref to the logged-in user; a client cannot spoof it.",
+      "Owner scope (private) — get/update/delete on another user's row returns 404 (no existence leak).",
+      "Referential integrity — a non-owner ref must point at an existing row, else 400.",
+      "Validation — required, type, max length/value, and enum membership are enforced (400).",
+      "Unique — a ~ field rejects a duplicate value with 409.",
+      "Field lock — changing a field not in update:[...] returns 403.",
+      "Defaults — applied when a field is absent; now / @ become the current ISO timestamp.",
+      "Queries — filter (equality, declared fields only) then sort then page."
+    ]
+  },
+  "errors": {
+    "title": "Verifier error codes",
+    "lead": "aix check judges a spec 100% by machine. If it returns no errors, the runtime is guaranteed to run it. Typos get a deterministic \"did you mean …?\" hint.",
+    "colCode": "code",
+    "colCatches": "catches",
+    "codes": {
+      "DUP_FIELD": "duplicate field name in one entity",
+      "BAD_REF": "ref target is not a defined entity",
+      "EMPTY_ENUM": "enum[] declared with no values",
+      "BAD_DEFAULT": "default doesn't match the type (=now is ts-only; an enum default must be a member)",
+      "BAD_MAX": "<= used on a type other than str/int",
+      "BAD_OWNER": "* used on a non-ref field",
+      "BAD_UNIQUE": "~ used on a type other than str/int",
+      "MULTI_OWNER": "more than one * owner in an entity",
+      "NO_ENTITY": "route points at an undefined entity",
+      "BAD_UPDATE": "update:[X] where X is not a real field",
+      "OWNER_LOCKED": "the owner ref cannot be in update:[...] (ownership is immutable)",
+      "PRIVATE_LIST": "private together with a public list — use list:mine",
+      "OWNER_CREATE_NO_AUTH": "create with an owner ref needs auth so the owner can be injected",
+      "FILTER_FIELD": "filter:[X] where X is not a real field",
+      "SORT_FIELD": "sort field is missing or not str/int/ts",
+      "NO_OWNER": "list:mine/private but the entity has no ref",
+      "AMBIGUOUS_OWNER": "list:mine/private with multiple refs and no * marker"
+    }
+  },
+  "compare": {
+    "title": "aix vs other tools",
+    "lead": "aix is a small language, not a library. The same owner-scoped blog backend — login, ownership, validation, field-locked updates — is three lines of aix. The conventional stacks below are real and kept tight; the bulk is imperative glue a machine cannot prove correct.",
+    "aixLabel": "aix — the whole backend",
+    "colSame": "the same backend, written the usual way",
+    "items": [
+      {
+        "name": "Prisma + Next.js",
+        "note": "A Prisma schema, plus one App-Router route handler per operation with zod validation, auth checks, and ownership scoping all written by hand.",
+        "takeaway": "~300 tokens across 5 files of glue — every line a place to get auth or ownership wrong, with no static check that you didn't."
+      },
+      {
+        "name": "Ruby on Rails",
+        "note": "A migration, an ActiveRecord model, a controller with strong params, a before_action for auth, and manual scoping to current_user.",
+        "takeaway": "Convention removes some boilerplate, but ownership and field-locking are still hand-written policy."
+      },
+      {
+        "name": "Django + DRF",
+        "note": "A model, a serializer, a ViewSet, a permission class, and a get_queryset scoped to the request user.",
+        "takeaway": "Five moving parts to wire correctly for what aix states in a single line."
+      },
+      {
+        "name": "Raw SQL + handlers",
+        "note": "DDL, plus a hand-written endpoint per operation doing its own parsing, validation, and WHERE owner = ? scoping.",
+        "takeaway": "Maximum control — and maximum surface for a silent authorization bug."
+      }
+    ],
+    "closing": "In every stack, the validation and authorization are imperative code that no tool checks for correctness. In aix they are declarations a deterministic verifier proves before the API ever serves a request — which is the whole point of making it a language."
+  }
+}

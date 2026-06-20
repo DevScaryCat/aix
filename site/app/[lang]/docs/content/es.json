@@ -1,0 +1,144 @@
+{
+  "nav": {
+    "overview": "Visión general",
+    "entities": "Entidades y campos",
+    "routes": "Rutas",
+    "runtime": "Reglas de runtime",
+    "errors": "Errores del verificador",
+    "compare": "vs otras herramientas"
+  },
+  "overview": {
+    "title": "El lenguaje aix",
+    "lead": "aix es un lenguaje declarativo minúsculo para backends. Declaras entidades (formas de datos) y rutas (acciones expuestas); un runtime fijo interpreta la especificación como una API CRUD en vivo. No se genera código alguno — y un verificador determinista demuestra que una especificación es correcta antes de que llegue a ejecutarse.",
+    "twoKinds": "Cada archivo .aix tiene una declaración por línea, y exactamente dos tipos. Las llaves son opcionales; # inicia un comentario.",
+    "entityComment": "entity — una forma de datos",
+    "routeComment": "routes — las acciones a exponer",
+    "next": "Empieza con Entidades y campos, o salta a cómo se compara aix con otras herramientas."
+  },
+  "entities": {
+    "title": "Entidades y campos",
+    "lead": "Los campos se separan por comas y siguen un orden fijo de izquierda a derecha, de modo que una máquina los analiza de forma 100% determinista.",
+    "grammar": "name:type[:ref][!][*][~][<=n][=default]",
+    "partsTitle": "Partes de un campo (de izquierda a derecha)",
+    "colPart": "parte",
+    "colMeaning": "significado",
+    "parts": {
+      "name:type": "nombre y tipo del campo (obligatorio)",
+      ":ref": "para un ref, la entidad a la que apunta",
+      "!": "obligatorio",
+      "*": "marcador de propietario (solo ref)",
+      "~": "único (str / int)",
+      "<=n": "longitud máxima (str) / valor máximo (int)",
+      "=default": "valor por defecto"
+    },
+    "typesTitle": "Tipos",
+    "colType": "tipo",
+    "types": {
+      "str": "cadena",
+      "int": "entero",
+      "bool": "true / false",
+      "ts": "marca de tiempo (=now, o la forma abreviada name@, fija la hora de creación)",
+      "ref": "referencia a otra entidad",
+      "enum[a|b|c]": "un conjunto cerrado de valores permitidos"
+    },
+    "shorthandTitle": "Forma abreviada (menos tokens que emitir)",
+    "colShort": "abreviado",
+    "colLong": "significa",
+    "shorthand": {
+      "author>user": "author:ref:user",
+      "created@": "created:ts=now",
+      "email:str!~": "cadena obligatoria y única"
+    }
+  },
+  "routes": {
+    "title": "Rutas",
+    "lead": "La entidad ya debe estar definida. Una ruta enumera las acciones a exponer sobre HTTP.",
+    "colOp": "acción",
+    "colHttp": "HTTP",
+    "colMeaning": "significado",
+    "ops": {
+      "list": "listar todas las filas",
+      "list:mine": "solo las filas del usuario autenticado",
+      "get": "obtener una por id",
+      "create": "crear (el propietario se inyecta automáticamente)",
+      "update:[a,b]": "actualizar solo los campos indicados",
+      "delete": "eliminar una por id",
+      "auth": "este recurso requiere inicio de sesión",
+      "private": "get/update/delete de una sola fila son exclusivos del propietario",
+      "filter:[a,b]": "filtros de igualdad mediante parámetros de consulta",
+      "sort:f / sort:f:desc": "ordenar resultados por un campo",
+      "page": "paginación mediante ?limit & ?offset"
+    },
+    "inferTitle": "Inferencia",
+    "infer": "list:mine implica tanto auth como private — no los escribes. Un private por sí solo implica auth también. Menos que teclear, y los tokens acoplados no se pueden olvidar."
+  },
+  "runtime": {
+    "title": "Reglas de runtime",
+    "lead": "Cómo el runtime fijo interpreta una especificación verificada, por cada petición:",
+    "rules": [
+      "Auth — con auth, una petición sin la cabecera x-user-id recibe 401.",
+      "Inyección de propietario — create siempre fija el ref del propietario al usuario autenticado; un cliente no puede falsificarlo.",
+      "Ámbito del propietario (private) — get/update/delete sobre la fila de otro usuario devuelve 404 (sin filtración de existencia).",
+      "Integridad referencial — un ref que no sea de propietario debe apuntar a una fila existente, si no 400.",
+      "Validación — se aplican obligatoriedad, tipo, longitud/valor máximo y pertenencia a enum (400).",
+      "Único — un campo ~ rechaza un valor duplicado con 409.",
+      "Bloqueo de campo — cambiar un campo que no esté en update:[...] devuelve 403.",
+      "Valores por defecto — se aplican cuando un campo está ausente; now / @ se convierten en la marca de tiempo ISO actual.",
+      "Consultas — filter (igualdad, solo campos declarados) luego sort luego page."
+    ]
+  },
+  "errors": {
+    "title": "Códigos de error del verificador",
+    "lead": "aix check juzga una especificación 100% por máquina. Si no devuelve errores, se garantiza que el runtime la ejecutará. Los errores tipográficos reciben una sugerencia determinista «¿quisiste decir …?».",
+    "colCode": "código",
+    "colCatches": "detecta",
+    "codes": {
+      "DUP_FIELD": "nombre de campo duplicado en una entidad",
+      "BAD_REF": "el destino del ref no es una entidad definida",
+      "EMPTY_ENUM": "enum[] declarado sin valores",
+      "BAD_DEFAULT": "el valor por defecto no coincide con el tipo (=now es exclusivo de ts; un valor por defecto de enum debe ser un miembro)",
+      "BAD_MAX": "<= usado en un tipo distinto de str/int",
+      "BAD_OWNER": "* usado en un campo que no es ref",
+      "BAD_UNIQUE": "~ usado en un tipo distinto de str/int",
+      "MULTI_OWNER": "más de un propietario * en una entidad",
+      "NO_ENTITY": "la ruta apunta a una entidad no definida",
+      "BAD_UPDATE": "update:[X] donde X no es un campo real",
+      "OWNER_LOCKED": "el ref del propietario no puede estar en update:[...] (la propiedad es inmutable)",
+      "PRIVATE_LIST": "private junto con un list público — usa list:mine",
+      "OWNER_CREATE_NO_AUTH": "create con un ref de propietario necesita auth para que el propietario pueda inyectarse",
+      "FILTER_FIELD": "filter:[X] donde X no es un campo real",
+      "SORT_FIELD": "el campo de ordenación falta o no es str/int/ts",
+      "NO_OWNER": "list:mine/private pero la entidad no tiene ref",
+      "AMBIGUOUS_OWNER": "list:mine/private con múltiples refs y sin marcador *"
+    }
+  },
+  "compare": {
+    "title": "aix vs otras herramientas",
+    "lead": "aix es un lenguaje pequeño, no una biblioteca. El mismo backend de blog con ámbito de propietario — login, propiedad, validación, actualizaciones con campos bloqueados — son tres líneas de aix. Los stacks convencionales de abajo son reales y se mantienen ajustados; el grueso es pegamento imperativo cuya corrección una máquina no puede demostrar.",
+    "aixLabel": "aix — el backend completo",
+    "colSame": "el mismo backend, escrito de la forma habitual",
+    "items": [
+      {
+        "name": "Prisma + Next.js",
+        "note": "Un esquema de Prisma, más un route handler de App-Router por operación con validación zod, comprobaciones de auth y ámbito de propiedad, todo escrito a mano.",
+        "takeaway": "~300 tokens repartidos en 5 archivos de pegamento — cada línea un lugar donde equivocarse en auth o propiedad, sin ninguna comprobación estática de que no lo hiciste."
+      },
+      {
+        "name": "Ruby on Rails",
+        "note": "Una migración, un modelo ActiveRecord, un controlador con strong params, un before_action para auth y delimitación manual a current_user.",
+        "takeaway": "La convención elimina algo de código repetitivo, pero la propiedad y el bloqueo de campos siguen siendo política escrita a mano."
+      },
+      {
+        "name": "Django + DRF",
+        "note": "Un modelo, un serializer, un ViewSet, una permission class y un get_queryset delimitado al usuario de la petición.",
+        "takeaway": "Cinco piezas móviles que conectar correctamente para lo que aix declara en una sola línea."
+      },
+      {
+        "name": "SQL en crudo + handlers",
+        "note": "DDL, más un endpoint escrito a mano por operación que hace su propio parsing, validación y delimitación WHERE owner = ?.",
+        "takeaway": "Máximo control — y máxima superficie para un fallo de autorización silencioso."
+      }
+    ],
+    "closing": "En cada stack, la validación y la autorización son código imperativo cuya corrección ninguna herramienta comprueba. En aix son declaraciones que un verificador determinista demuestra antes de que la API atienda una sola petición — que es precisamente el motivo de hacer de ello un lenguaje."
+  }
+}

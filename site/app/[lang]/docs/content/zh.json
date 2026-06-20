@@ -1,0 +1,144 @@
+{
+  "nav": {
+    "overview": "概览",
+    "entities": "实体与字段",
+    "routes": "路由",
+    "runtime": "运行时规则",
+    "errors": "校验器错误",
+    "compare": "对比其他工具"
+  },
+  "overview": {
+    "title": "aix 语言",
+    "lead": "aix 是一种用于后端的极简声明式语言。你声明实体（数据结构）和路由（对外暴露的操作）；一个固定的运行时将该规范解释为一个实时的 CRUD API。不生成任何代码——并且在规范运行之前，一个确定性的校验器会证明它是正确的。",
+    "twoKinds": "每个 .aix 文件每行一条声明，且只有两种声明。花括号是可选的；# 开始一条注释。",
+    "entityComment": "entity——一种数据结构",
+    "routeComment": "routes——要对外暴露的操作",
+    "next": "从实体与字段开始，或直接跳到 aix 与其他工具的对比。"
+  },
+  "entities": {
+    "title": "实体与字段",
+    "lead": "字段以逗号分隔，并遵循固定的从左到右顺序，因此机器解析它们时是 100% 确定性的。",
+    "grammar": "name:type[:ref][!][*][~][<=n][=default]",
+    "partsTitle": "字段各部分（从左到右）",
+    "colPart": "部分",
+    "colMeaning": "含义",
+    "parts": {
+      "name:type": "字段名与类型（必填）",
+      ":ref": "对于 ref，指它所指向的实体",
+      "!": "必填",
+      "*": "所有者标记（仅 ref）",
+      "~": "唯一（str / int）",
+      "<=n": "最大长度（str）/ 最大值（int）",
+      "=default": "默认值"
+    },
+    "typesTitle": "类型",
+    "colType": "类型",
+    "types": {
+      "str": "字符串",
+      "int": "整数",
+      "bool": "true / false",
+      "ts": "时间戳（=now，或简写 name@，用于设置创建时间）",
+      "ref": "对另一个实体的引用",
+      "enum[a|b|c]": "一组封闭的允许值集合"
+    },
+    "shorthandTitle": "简写（少写一些 token）",
+    "colShort": "简写",
+    "colLong": "含义",
+    "shorthand": {
+      "author>user": "author:ref:user",
+      "created@": "created:ts=now",
+      "email:str!~": "必填、唯一的字符串"
+    }
+  },
+  "routes": {
+    "title": "路由",
+    "lead": "实体必须已经定义。路由列出要通过 HTTP 暴露的操作。",
+    "colOp": "操作",
+    "colHttp": "HTTP",
+    "colMeaning": "含义",
+    "ops": {
+      "list": "列出所有行",
+      "list:mine": "仅当前登录用户的行",
+      "get": "按 id 获取一条",
+      "create": "创建（自动注入所有者）",
+      "update:[a,b]": "仅更新列出的字段",
+      "delete": "按 id 删除一条",
+      "auth": "该资源需要登录",
+      "private": "单行的 get/update/delete 仅限所有者",
+      "filter:[a,b]": "通过查询参数进行相等过滤",
+      "sort:f / sort:f:desc": "按某字段对结果排序",
+      "page": "通过 ?limit 和 ?offset 分页"
+    },
+    "inferTitle": "推断",
+    "infer": "list:mine 同时蕴含 auth 和 private——你不必显式写出它们。单独的 private 也会蕴含 auth。少写一些代码，而且这些相互耦合的 token 不会被遗漏。"
+  },
+  "runtime": {
+    "title": "运行时规则",
+    "lead": "固定的运行时如何按每个请求解释一个已校验的规范：",
+    "rules": [
+      "Auth——在启用 auth 时，缺少 x-user-id 头的请求会得到 401。",
+      "所有者注入——create 总是将所有者 ref 设置为当前登录用户；客户端无法伪造它。",
+      "所有者范围（private）——对其他用户的行进行 get/update/delete 会返回 404（不泄露其是否存在）。",
+      "引用完整性——非所有者的 ref 必须指向一个已存在的行，否则返回 400。",
+      "校验——强制执行必填、类型、最大长度/值以及 enum 成员资格（400）。",
+      "唯一性——~ 字段会以 409 拒绝重复值。",
+      "字段锁定——修改不在 update:[...] 中的字段会返回 403。",
+      "默认值——在字段缺失时应用；now / @ 会变为当前的 ISO 时间戳。",
+      "查询——先 filter（相等，仅限已声明的字段），再 sort，最后 page。"
+    ]
+  },
+  "errors": {
+    "title": "校验器错误码",
+    "lead": "aix check 100% 由机器判定一个规范。如果它不返回任何错误，运行时就保证能运行该规范。拼写错误会得到一个确定性的“你是不是想输入 …？”提示。",
+    "colCode": "错误码",
+    "colCatches": "捕获的问题",
+    "codes": {
+      "DUP_FIELD": "同一实体中存在重复的字段名",
+      "BAD_REF": "ref 目标不是一个已定义的实体",
+      "EMPTY_ENUM": "enum[] 声明时没有任何值",
+      "BAD_DEFAULT": "默认值与类型不匹配（=now 仅用于 ts；enum 默认值必须是其成员之一）",
+      "BAD_MAX": "<= 用在了 str/int 以外的类型上",
+      "BAD_OWNER": "* 用在了非 ref 字段上",
+      "BAD_UNIQUE": "~ 用在了 str/int 以外的类型上",
+      "MULTI_OWNER": "一个实体中存在多于一个的 * 所有者",
+      "NO_ENTITY": "路由指向了一个未定义的实体",
+      "BAD_UPDATE": "update:[X] 中的 X 不是一个真实存在的字段",
+      "OWNER_LOCKED": "所有者 ref 不能出现在 update:[...] 中（所有权是不可变的）",
+      "PRIVATE_LIST": "private 与一个公开的 list 同时出现——请改用 list:mine",
+      "OWNER_CREATE_NO_AUTH": "带所有者 ref 的 create 需要 auth，以便能注入所有者",
+      "FILTER_FIELD": "filter:[X] 中的 X 不是一个真实存在的字段",
+      "SORT_FIELD": "sort 字段缺失或不是 str/int/ts",
+      "NO_OWNER": "使用了 list:mine/private 但该实体没有 ref",
+      "AMBIGUOUS_OWNER": "list:mine/private 搭配多个 ref 且没有 * 标记"
+    }
+  },
+  "compare": {
+    "title": "aix vs 其他工具",
+    "lead": "aix 是一种小型语言，而不是一个库。同样一个按所有者隔离的博客后端——登录、所有权、校验、字段锁定的更新——用 aix 只需三行。下面这些常规技术栈都是真实且写得很精简的；其中大部分是机器无法证明其正确性的命令式胶水代码。",
+    "aixLabel": "aix——整个后端",
+    "colSame": "同样的后端，用常规方式编写",
+    "items": [
+      {
+        "name": "Prisma + Next.js",
+        "note": "一份 Prisma schema，外加每个操作一个 App-Router 路由处理器，其中的 zod 校验、auth 检查和所有权隔离全部手写。",
+        "takeaway": "约 300 个 token，散落在 5 个文件的胶水代码中——每一行都是可能把 auth 或所有权写错的地方，且没有任何静态检查能保证你没写错。"
+      },
+      {
+        "name": "Ruby on Rails",
+        "note": "一份 migration、一个 ActiveRecord 模型、一个带 strong params 的 controller、一个用于 auth 的 before_action，以及手动隔离到 current_user。",
+        "takeaway": "约定省去了一些样板代码，但所有权和字段锁定仍然是手写的策略。"
+      },
+      {
+        "name": "Django + DRF",
+        "note": "一个模型、一个 serializer、一个 ViewSet、一个权限类，以及一个隔离到请求用户的 get_queryset。",
+        "takeaway": "为了实现 aix 一行就能表述的东西，需要正确接好五个活动部件。"
+      },
+      {
+        "name": "Raw SQL + handlers",
+        "note": "DDL，外加每个操作一个手写的端点，各自完成解析、校验以及 WHERE owner = ? 隔离。",
+        "takeaway": "最大的控制力——也是悄无声息的授权漏洞最大的暴露面。"
+      }
+    ],
+    "closing": "在每一种技术栈里，校验和授权都是命令式代码，没有任何工具会检查其正确性。而在 aix 中，它们是声明，一个确定性的校验器会在该 API 处理任何请求之前就证明它们正确——这正是把它做成一种语言的全部意义所在。"
+  }
+}
