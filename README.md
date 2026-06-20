@@ -76,9 +76,9 @@ Full methodology: **[bench/BENCHMARK.md](bench/BENCHMARK.md)**.
 ## A whole blog backend — the entire "source code"
 
 ```
-E user { name:str!, email:str! }
-E post { title:str!<=200, body:str!, published:bool=false, author:ref:user, created:ts=now }
-R post { list:mine, get, create, update:[title,body,published], delete, auth }
+E user name:str!, email:str!~
+E post title:str!<=200, body:str!, published:bool=false, author>user, created@
+R post list:mine, get, create, update:[title,body,published], delete
 ```
 
 Three lines → auth-gated routes, owner auto-assignment, `list:mine` scoping,
@@ -131,9 +131,9 @@ one, with exact locations — the loop an AI closes by itself:
 node src/cli.mjs check examples/broken.aix
 ```
 ```json
-{ "code": "BAD_REF",      "where": "post.author", "message": "ref target \"user\" is not a defined entity" }
-{ "code": "BAD_UPDATE",   "where": "R post",      "message": "update field \"titel\" is not a field of post" }
-{ "code": "MINE_NO_AUTH", "where": "R post",      "message": "list:mine needs \"auth\" — without login there is no \"me\"" }
+{ "code": "BAD_REF",     "where": "post.author", "message": "ref target \"user\" is not a defined entity" }
+{ "code": "BAD_DEFAULT", "where": "post.rank",   "message": "int field default must be an integer" }
+{ "code": "BAD_UPDATE",  "where": "R post",      "message": "update field \"titel\" is not a field of post — did you mean \"title\"?" }
 ```
 
 ---

@@ -1,0 +1,8 @@
+# Task tracker — shows v0.1 features: enum, unique (~), refs (>), owner privacy
+# (list:mine), referential integrity, filter / sort / pagination.
+E user name:str!, email:str!~
+E project name:str!, owner>user, created@
+E task title:str!<=200, status:enum[todo|doing|done]=todo, priority:int=0, project>project, owner>user*, created@
+R user get, create
+R project list:mine, get, create, update:[name], delete
+R task list:mine, get, create, update:[title,status,priority], delete, filter:[status], sort:priority:desc, page

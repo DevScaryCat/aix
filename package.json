@@ -1,12 +1,15 @@
 {
   "name": "aix",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "An AI-native execution format. AI emits a tiny verifiable spec; a fixed runtime interprets it. No generated code, no human in the loop.",
   "type": "module",
   "bin": { "aix": "src/cli.mjs" },
   "scripts": {
     "check": "node src/cli.mjs check examples/blog.aix",
-    "run": "node src/cli.mjs run examples/blog.aix"
+    "run": "node src/cli.mjs run examples/blog.aix",
+    "bench": "node bench/run.mjs",
+    "bench:keys": "node --env-file=.env bench/check-keys.mjs",
+    "bench:llm": "node --env-file=.env bench/llm-run.mjs"
   },
   "license": "MIT"
 }

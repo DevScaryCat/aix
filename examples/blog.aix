@@ -1,4 +1,5 @@
-# A whole blog backend. This is the entire "source code".
-E user { name:str!, email:str! }
-E post { title:str!<=200, body:str!, published:bool=false, author:ref:user, created:ts=now }
-R post { list:mine, get, create, update:[title,body,published], delete, auth }
+# A whole blog backend — the entire "source code" (v0.1 terse syntax).
+# Braces optional · `>` = ref · `@` = created timestamp · `~` = unique · list:mine implies auth.
+E user name:str!, email:str!~
+E post title:str!<=200, body:str!, published:bool=false, author>user, created@
+R post list:mine, get, create, update:[title,body,published], delete
