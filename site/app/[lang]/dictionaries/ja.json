@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "title": "aix — AIネイティブな実行フォーマット",
+    "description": "AIがわずかなトークンで書き、機械が正しさを証明し、人間の介入ゼロで動くバックエンド。AIは検証可能な小さな仕様だけを出力し、固定ランタイムがそれを解釈する。"
+  },
+  "nav": {
+    "home": "ホーム",
+    "docs": "仕様",
+    "github": "GitHub",
+    "language": "言語"
+  },
+  "hero": {
+    "wordmark": "aix",
+    "tagline": "AIネイティブな実行フォーマット",
+    "lead": "Next.js/React スタックの数分の一のトークンで AI が書き、人間ではなく機械が正しさを証明でき、人間の介入ゼロで動くバックエンド。",
+    "sub": "AI は if / for / 関数を一切書かない。短い宣言的な仕様だけを書く。信頼された固定ランタイムが実行方法をすでに知っているため、検証対象は無限のコードではなく小さな閉じた仕様だ。だから検証器は100%決定論的になれる。",
+    "ctaDocs": "仕様を読む",
+    "ctaGithub": "GitHub で見る",
+    "sticker": "v0 · 依存ゼロ"
+  },
+  "pipeline": {
+    "title": "仕組み",
+    "nl": "自然言語",
+    "nlNote": "人間が望むこと",
+    "spec": ".aix 仕様",
+    "specNote": "AI はコードではなく小さな仕様を書く",
+    "verify": "検証器",
+    "verifyNote": "決定論的 · 100% 機械判定",
+    "runtime": "ライブ API",
+    "runtimeNote": "ランタイムが仕様を解釈する — 生成コードは存在しない",
+    "rejected": "却下 → 構造化エラー → AI が自分で修正",
+    "accepted": "合格"
+  },
+  "blog": {
+    "title": "ブログのバックエンド全体",
+    "lead": "これが「ソースコード」のすべて。3行が、認証ゲート付きルート、所有者の自動割り当て、list:mine スコープ、長さ検証、フィールド単位の更新ロックになる。",
+    "caption": "examples/blog.aix"
+  },
+  "perf": {
+    "title": "性能 — 主張ではなく実測",
+    "subtitle": "同じ CRUD バックエンド(認証・所有権スコープ・検証・フィールドロック更新)を2通りで: 慣用的な Next.js(ルートハンドラ + zod + prisma)対 .aix 仕様。再現: node bench/run.mjs。",
+    "tokensTitle": "バックエンド全体を定義するトークン数",
+    "linesTitle": "ソース行数",
+    "lowerBetter": "3シナリオ合計 · 少ないほど良い",
+    "fewer": "少ない",
+    "tableTitle": "シナリオ別(正確値)",
+    "colScenario": "シナリオ",
+    "colMetric": "指標",
+    "colRatio": "aix の優位",
+    "metricTokens": "推定トークン",
+    "metricLines": "行",
+    "metricFiles": "ファイル",
+    "honestyTitle": "正直に言うと — 必読",
+    "honesty": [
+      "推定トークン = 文字数 ÷ 4 — よくある目安で、正確なトークナイザの値ではない。文字数・行数の生データは正確なので、比率はどのトークナイザでも保たれる。差は桁違いのままだ。",
+      "Next.js のコードは本物で、無駄なく書いている — 差を膨らませる水増しはない。",
+      "未測定: 初回成功率と再試行/人間介入の回数。実際の LLM 実行が必要 — 偽の数値はなし。",
+      "ストレージはインメモリ。これは v0 の概念実証で、本番ではない。"
+    ]
+  },
+  "verifier": {
+    "title": "人間がデバッグするはずのバグを検証器が捕まえる",
+    "lead": "examples/broken.aix にはバグが3つある。check が正確な位置とともにすべて見つける — AI が人間なしで自ら閉じるループ。",
+    "caption": "examples/broken.aix",
+    "errorsCaption": "node src/cli.mjs check examples/broken.aix"
+  },
+  "usage": {
+    "title": "使い方",
+    "requires": "Node 18+ が必要。依存ゼロ。",
+    "clone": "クローン",
+    "step1": "仕様を機械検証 — 決定論的、人間不要",
+    "step1Out": "→ { \"ok\": true, \"entities\": 2, \"routes\": 1 }",
+    "step2": ":8787 でライブ API として実行",
+    "liveTitle": "そしてライブ API を叩く — ランタイムが認証・所有権・検証を強制する",
+    "curl1": "ログインなし → 却下",
+    "curl2": "ログイン済み → 所有者 + タイムスタンプ自動補完",
+    "curl3": "list:mine → 自分の行だけ",
+    "curl4": "仕様が公開していないフィールドの更新 → ロック"
+  },
+  "docs": {
+    "title": "aix 仕様",
+    "subtitle": "aix は AI が書き機械が検証するバックエンドだ。人間も読めるが、第一の利用者は AI。エンティティ(データの形)とルート(公開する操作)を宣言すれば、固定ランタイムが実際の CRUD API として解釈する。生成されるコードはない。",
+    "backHome": "← ホーム",
+    "structureTitle": "1. 全体構造",
+    "structureBody": "1行に1宣言、# 以降はコメント。宣言はちょうど2種類:",
+    "entityComment": "Entity — データの形",
+    "routeComment": "Route — 公開する CRUD 操作",
+    "entityTitle": "2. エンティティ (E)",
+    "entityBody": "フィールドはカンマ区切り。各フィールドは固定された順序に従うため、機械が100%決定論的に解析できる:",
+    "fieldGrammar": "名前:型[:参照][!][*][<=数][=既定値]",
+    "partsTitle": "フィールドの構成(左から)",
+    "colPart": "部分",
+    "colMeaning": "意味",
+    "parts": {
+      "name:type": "フィールド名と型(必須)",
+      ":ref": "ref 型のとき指す先のエンティティ",
+      "!": "必須(なければ却下)",
+      "*": "所有者マーカー(ref のみ)",
+      "<=n": "最大長(str)/ 最大値(int)",
+      "=default": "既定値"
+    },
+    "typesTitle": "型",
+    "colType": "型",
+    "types": {
+      "str": "文字列",
+      "int": "整数",
+      "bool": "真 / 偽",
+      "ts": "タイムスタンプ(=now は作成時刻を記録)",
+      "ref": "別エンティティへの参照(ref:<エンティティ>)"
+    },
+    "routesTitle": "3. ルート (R)",
+    "routesBody": "エンティティは事前に E で定義されている必要がある。利用できる操作:",
+    "colOp": "操作",
+    "colHttp": "HTTP",
+    "ops": {
+      "list": "全件リスト",
+      "list:mine": "自分のものだけ(所有者 = ログインユーザー)",
+      "get": "1件取得",
+      "create": "作成(所有者を自動注入)",
+      "update": "列挙したフィールドのみ更新",
+      "delete": "削除",
+      "auth": "このリソースはログインが必要"
+    },
+    "runtimeTitle": "4. ランタイムの動作規則",
+    "runtimeBody": "検証を通った仕様をランタイムはこう解釈する:",
+    "runtimeRules": [
+      "認証 — auth があると、x-user-id ヘッダのないリクエストは 401。",
+      "所有者の自動注入 — create 時、所有者 ref フィールドをログインユーザーで埋める(本文になくてよい)。",
+      "所有者の決定 — * 付きの ref、なければ単一の ref。複数あると検証時に AMBIGUOUS_OWNER。",
+      "list:mine — 所有者が現在のユーザーである行のみ返す。",
+      "検証 — create/update が必須・型・最大値を強制(REQUIRED / BAD_TYPE / TOO_LONG / TOO_BIG)。",
+      "フィールドロック — update:[...] にないフィールドを変えると 403 FIELD_LOCKED。",
+      "既定値 — なければ = の既定値を適用。now は現在の ISO タイムスタンプ。"
+    ],
+    "errorsTitle": "5. 検証器のエラーコード",
+    "errorsBody": "aix check は仕様を100%機械で判定する。エラーがなければランタイムの実行が保証される。失敗したら、どこがなぜ間違いかを正確に示す — AI が読んで自ら直す構造化エラー。",
+    "colCode": "コード",
+    "colCatches": "捕捉する内容",
+    "errors": {
+      "DUP_FIELD": "1つのエンティティ内の重複フィールド名",
+      "BAD_REF": "ref:X だが X が定義済みエンティティでない",
+      "BAD_DEFAULT": "既定値が型と一致しない(=now は ts のみ)",
+      "BAD_MAX": "<= を str/int 以外の型に使用",
+      "BAD_OWNER": "* を ref でないフィールドに使用",
+      "MULTI_OWNER": "1エンティティに * 所有者が2つ以上",
+      "NO_ENTITY": "ルートが未定義のエンティティを指す",
+      "BAD_UPDATE": "update:[X] の X が実在しないフィールド",
+      "NO_OWNER": "list:mine だが ref フィールドが1つもない",
+      "AMBIGUOUS_OWNER": "list:mine で ref が複数あり * マーカーなし",
+      "MINE_NO_AUTH": "list:mine だが auth なし — 「自分」が分からない"
+    }
+  },
+  "footer": {
+    "tagline": "AIネイティブな実行フォーマット。AI は検証可能な小さな仕様を出し、固定ランタイムが解釈する。生成コードなし、人間の介入なし。",
+    "builtWith": "純粋な Node · 依存ゼロ · インメモリ (v0)",
+    "license": "MIT",
+    "repo": "リポジトリ",
+    "spec": "仕様",
+    "designNote": "デザイン: dell-1996(カタログ時代)"
+  }
+}

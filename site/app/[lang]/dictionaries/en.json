@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "title": "aix — an AI-native execution format",
+    "description": "A backend an AI writes in a fraction of the tokens, that a machine can prove correct, running with zero human in the loop. The AI emits a tiny verifiable spec; a fixed runtime interprets it."
+  },
+  "nav": {
+    "home": "Home",
+    "docs": "Spec",
+    "github": "GitHub",
+    "language": "Language"
+  },
+  "hero": {
+    "wordmark": "aix",
+    "tagline": "an AI-native execution format",
+    "lead": "A backend an AI can write in a fraction of the tokens of a Next.js/React stack, that a machine — not a human — can prove correct, and that runs with zero human in the loop.",
+    "sub": "The AI never writes if / for / functions. It writes a short declarative spec. A fixed, trusted runtime already knows how to run it — so what we verify isn't unbounded code, it's a tiny closed spec. That's why the verifier can be 100% deterministic.",
+    "ctaDocs": "Read the spec",
+    "ctaGithub": "View on GitHub",
+    "sticker": "v0 · zero deps"
+  },
+  "pipeline": {
+    "title": "How it works",
+    "nl": "natural language",
+    "nlNote": "what a human wants",
+    "spec": ".aix spec",
+    "specNote": "the AI writes a tiny spec — not code",
+    "verify": "verifier",
+    "verifyNote": "deterministic · 100% machine judgement",
+    "runtime": "live API",
+    "runtimeNote": "the runtime interprets the spec — no generated code exists",
+    "rejected": "rejected → structured error → the AI fixes itself",
+    "accepted": "accepted"
+  },
+  "blog": {
+    "title": "A whole blog backend",
+    "lead": "This is the entire \"source code\". Three lines become auth-gated routes, owner auto-assignment, list:mine scoping, length validation, and field-level update locking.",
+    "caption": "examples/blog.aix"
+  },
+  "perf": {
+    "title": "Performance — measured, not claimed",
+    "subtitle": "The same CRUD backend (auth, ownership scoping, validation, field-locked updates), written two ways: idiomatic Next.js (route handlers + zod + prisma) vs an .aix spec. Reproduce it: node bench/run.mjs.",
+    "tokensTitle": "Tokens to define the whole backend",
+    "linesTitle": "Lines of source",
+    "lowerBetter": "all 3 scenarios combined · lower is better",
+    "fewer": "fewer",
+    "tableTitle": "Per scenario (exact)",
+    "colScenario": "scenario",
+    "colMetric": "metric",
+    "colRatio": "aix wins",
+    "metricTokens": "est. tokens",
+    "metricLines": "lines",
+    "metricFiles": "files",
+    "honestyTitle": "Honesty notes — read these",
+    "honesty": [
+      "est. tokens = chars ÷ 4 — the common rule of thumb, not an exact tokenizer count. The raw character and line counts are exact, so the ratio holds under any tokenizer; the gap is an order of magnitude regardless.",
+      "The Next.js code is real and kept tight — no padding to inflate the gap.",
+      "Not measured yet: first-try pass rate and retry / human-intervention count. Those need a live LLM run — no fake numbers.",
+      "Storage is in-memory; this is a v0 proof-of-concept, not production."
+    ]
+  },
+  "verifier": {
+    "title": "The verifier catches bugs a human would otherwise debug",
+    "lead": "examples/broken.aix has three bugs. check finds every one, with exact locations — the loop an AI closes by itself, with zero human in the loop.",
+    "caption": "examples/broken.aix",
+    "errorsCaption": "node src/cli.mjs check examples/broken.aix"
+  },
+  "usage": {
+    "title": "Usage",
+    "requires": "Requires Node 18+. Zero dependencies.",
+    "clone": "Clone it",
+    "step1": "Machine-verify a spec — deterministic, no human needed",
+    "step1Out": "→ { \"ok\": true, \"entities\": 2, \"routes\": 1 }",
+    "step2": "Run it as a live API on :8787",
+    "liveTitle": "Then hit the live API — the runtime enforces auth, ownership, and validation",
+    "curl1": "no login → rejected",
+    "curl2": "logged in → owner + timestamp auto-filled",
+    "curl3": "list:mine → only your rows",
+    "curl4": "editing a field the spec didn't expose → locked"
+  },
+  "docs": {
+    "title": "aix spec",
+    "subtitle": "aix is a backend an AI writes and a machine verifies. A human can read it, but the primary user is the AI. Declare entities (data shape) and routes (exposed actions); a fixed runtime interprets them as a live CRUD API. No code is generated.",
+    "backHome": "← Home",
+    "structureTitle": "1. Structure",
+    "structureBody": "One declaration per line; # starts a comment. There are exactly two kinds of declaration:",
+    "entityComment": "Entity — data shape",
+    "routeComment": "Route — exposed CRUD actions",
+    "entityTitle": "2. Entities (E)",
+    "entityBody": "Fields are comma-separated. Each field follows a fixed order so a machine can parse it 100% deterministically:",
+    "fieldGrammar": "name:type[:ref][!][*][<=n][=default]",
+    "partsTitle": "Field parts (left to right)",
+    "colPart": "part",
+    "colMeaning": "meaning",
+    "parts": {
+      "name:type": "field name and type (required)",
+      ":ref": "for a ref type, the entity it points to",
+      "!": "required (rejected if missing)",
+      "*": "owner marker (ref only)",
+      "<=n": "max length (str) / max value (int)",
+      "=default": "default value"
+    },
+    "typesTitle": "Types",
+    "colType": "type",
+    "types": {
+      "str": "string",
+      "int": "integer",
+      "bool": "true / false",
+      "ts": "timestamp (=now records creation time)",
+      "ref": "reference to another entity (ref:<entity>)"
+    },
+    "routesTitle": "3. Routes (R)",
+    "routesBody": "The entity must already be defined with E. Available actions:",
+    "colOp": "action",
+    "colHttp": "HTTP",
+    "ops": {
+      "list": "full list",
+      "list:mine": "only mine (owner = logged-in user)",
+      "get": "fetch one",
+      "create": "create (owner auto-injected)",
+      "update": "update only the listed fields",
+      "delete": "delete",
+      "auth": "this resource requires login"
+    },
+    "runtimeTitle": "4. Runtime rules",
+    "runtimeBody": "The runtime interprets a verified spec like this:",
+    "runtimeRules": [
+      "Auth — with auth, a request without an x-user-id header gets 401.",
+      "Owner auto-inject — on create, the owner ref field is filled from the logged-in user (it need not be in the body).",
+      "Owner resolution — the *-marked ref, else the single ref; multiple refs → AMBIGUOUS_OWNER at verify time.",
+      "list:mine — returns only rows whose owner equals the current user.",
+      "Validation — create/update enforce required, type, and max (REQUIRED / BAD_TYPE / TOO_LONG / TOO_BIG).",
+      "Field lock — changing a field not in update:[...] returns 403 FIELD_LOCKED.",
+      "Defaults — apply the = default when absent; now becomes the current ISO timestamp."
+    ],
+    "errorsTitle": "5. Verifier error codes",
+    "errorsBody": "aix check judges a spec 100% by machine. If it returns no errors, the runtime is guaranteed to run it. If it fails, it says exactly where and why — structured errors an AI reads and fixes itself.",
+    "colCode": "code",
+    "colCatches": "catches",
+    "errors": {
+      "DUP_FIELD": "duplicate field name in one entity",
+      "BAD_REF": "ref:X but X is not a defined entity",
+      "BAD_DEFAULT": "default value doesn't match the field type (=now only on ts)",
+      "BAD_MAX": "<= used on a type other than str/int",
+      "BAD_OWNER": "* used on a non-ref field",
+      "MULTI_OWNER": "more than one * owner in an entity",
+      "NO_ENTITY": "route points at an undefined entity",
+      "BAD_UPDATE": "update:[X] where X is not a real field",
+      "NO_OWNER": "list:mine but no ref field exists",
+      "AMBIGUOUS_OWNER": "list:mine with multiple refs and no * marker",
+      "MINE_NO_AUTH": "list:mine without auth — there is no \"me\""
+    }
+  },
+  "footer": {
+    "tagline": "An AI-native execution format. The AI emits a tiny verifiable spec; a fixed runtime interprets it. No generated code, no human in the loop.",
+    "builtWith": "Pure Node · zero dependencies · in-memory (v0)",
+    "license": "MIT",
+    "repo": "Repository",
+    "spec": "Spec",
+    "designNote": "Design: dell-1996 (catalog-era)"
+  }
+}

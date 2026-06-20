@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "title": "aix — un formato de ejecución nativo para IA",
+    "description": "Un backend que una IA escribe con una fracción de los tokens, que una máquina puede probar correcto y que funciona sin intervención humana. La IA emite una especificación pequeña y verificable; un runtime fijo la interpreta."
+  },
+  "nav": {
+    "home": "Inicio",
+    "docs": "Especificación",
+    "github": "GitHub",
+    "language": "Idioma"
+  },
+  "hero": {
+    "wordmark": "aix",
+    "tagline": "un formato de ejecución nativo para IA",
+    "lead": "Un backend que una IA puede escribir con una fracción de los tokens de un stack Next.js/React, que una máquina —no una persona— puede probar correcto, y que funciona con cero intervención humana.",
+    "sub": "La IA nunca escribe if / for / funciones. Escribe una especificación declarativa breve. Un runtime fijo y confiable ya sabe cómo ejecutarla, así que lo que verificamos no es código ilimitado, sino una especificación pequeña y cerrada. Por eso el verificador puede ser 100% determinista.",
+    "ctaDocs": "Leer la especificación",
+    "ctaGithub": "Ver en GitHub",
+    "sticker": "v0 · sin dependencias"
+  },
+  "pipeline": {
+    "title": "Cómo funciona",
+    "nl": "lenguaje natural",
+    "nlNote": "lo que quiere una persona",
+    "spec": "especificación .aix",
+    "specNote": "la IA escribe una especificación pequeña, no código",
+    "verify": "verificador",
+    "verifyNote": "determinista · 100% juicio de máquina",
+    "runtime": "API en vivo",
+    "runtimeNote": "el runtime interpreta la especificación — no existe código generado",
+    "rejected": "rechazado → error estructurado → la IA se corrige sola",
+    "accepted": "aceptado"
+  },
+  "blog": {
+    "title": "Un backend de blog completo",
+    "lead": "Este es todo el «código fuente». Tres líneas se convierten en rutas con autenticación, asignación automática de propietario, alcance list:mine, validación de longitud y bloqueo de actualización por campo.",
+    "caption": "examples/blog.aix"
+  },
+  "perf": {
+    "title": "Rendimiento — medido, no afirmado",
+    "subtitle": "El mismo backend CRUD (autenticación, alcance de propiedad, validación, actualizaciones con campos bloqueados), escrito de dos formas: Next.js idiomático (route handlers + zod + prisma) frente a una especificación .aix. Reprodúcelo: node bench/run.mjs.",
+    "tokensTitle": "Tokens para definir todo el backend",
+    "linesTitle": "Líneas de código fuente",
+    "lowerBetter": "los 3 escenarios juntos · menos es mejor",
+    "fewer": "menos",
+    "tableTitle": "Por escenario (exacto)",
+    "colScenario": "escenario",
+    "colMetric": "métrica",
+    "colRatio": "ventaja de aix",
+    "metricTokens": "tokens est.",
+    "metricLines": "líneas",
+    "metricFiles": "archivos",
+    "honestyTitle": "Notas de honestidad — léelas",
+    "honesty": [
+      "tokens est. = caracteres ÷ 4 — la regla práctica habitual, no un recuento exacto de tokenizador. Los conteos de caracteres y líneas sí son exactos, así que la proporción se mantiene con cualquier tokenizador; la diferencia es de un orden de magnitud de todos modos.",
+      "El código Next.js es real y está ajustado — sin relleno para inflar la diferencia.",
+      "Aún no medido: tasa de acierto al primer intento y número de reintentos / intervenciones humanas. Eso requiere una ejecución real con un LLM — sin cifras falsas.",
+      "El almacenamiento es en memoria; esto es una prueba de concepto v0, no producción."
+    ]
+  },
+  "verifier": {
+    "title": "El verificador atrapa errores que de otro modo depuraría una persona",
+    "lead": "examples/broken.aix tiene tres errores. check los encuentra todos, con su ubicación exacta — el bucle que una IA cierra por sí sola, sin intervención humana.",
+    "caption": "examples/broken.aix",
+    "errorsCaption": "node src/cli.mjs check examples/broken.aix"
+  },
+  "usage": {
+    "title": "Uso",
+    "requires": "Requiere Node 18+. Sin dependencias.",
+    "clone": "Clónalo",
+    "step1": "Verifica una especificación por máquina — determinista, sin personas",
+    "step1Out": "→ { \"ok\": true, \"entities\": 2, \"routes\": 1 }",
+    "step2": "Ejecútala como API en vivo en :8787",
+    "liveTitle": "Luego llama a la API en vivo — el runtime impone autenticación, propiedad y validación",
+    "curl1": "sin sesión → rechazado",
+    "curl2": "con sesión → propietario + marca de tiempo autocompletados",
+    "curl3": "list:mine → solo tus filas",
+    "curl4": "editar un campo que la especificación no expuso → bloqueado"
+  },
+  "docs": {
+    "title": "Especificación aix",
+    "subtitle": "aix es un backend que una IA escribe y una máquina verifica. Una persona puede leerlo, pero el usuario principal es la IA. Declara entidades (forma de los datos) y rutas (acciones expuestas); un runtime fijo las interpreta como una API CRUD real. No se genera código.",
+    "backHome": "← Inicio",
+    "structureTitle": "1. Estructura",
+    "structureBody": "Una declaración por línea; # inicia un comentario. Hay exactamente dos tipos de declaración:",
+    "entityComment": "Entity — forma de los datos",
+    "routeComment": "Route — acciones CRUD expuestas",
+    "entityTitle": "2. Entidades (E)",
+    "entityBody": "Los campos se separan por comas. Cada campo sigue un orden fijo para que una máquina pueda analizarlo de forma 100% determinista:",
+    "fieldGrammar": "nombre:tipo[:ref][!][*][<=n][=valor]",
+    "partsTitle": "Partes del campo (de izquierda a derecha)",
+    "colPart": "parte",
+    "colMeaning": "significado",
+    "parts": {
+      "name:type": "nombre y tipo del campo (obligatorio)",
+      ":ref": "para un tipo ref, la entidad a la que apunta",
+      "!": "obligatorio (rechazado si falta)",
+      "*": "marca de propietario (solo ref)",
+      "<=n": "longitud máx. (str) / valor máx. (int)",
+      "=default": "valor por defecto"
+    },
+    "typesTitle": "Tipos",
+    "colType": "tipo",
+    "types": {
+      "str": "cadena",
+      "int": "entero",
+      "bool": "verdadero / falso",
+      "ts": "marca de tiempo (=now registra la hora de creación)",
+      "ref": "referencia a otra entidad (ref:<entidad>)"
+    },
+    "routesTitle": "3. Rutas (R)",
+    "routesBody": "La entidad ya debe estar definida con E. Acciones disponibles:",
+    "colOp": "acción",
+    "colHttp": "HTTP",
+    "ops": {
+      "list": "lista completa",
+      "list:mine": "solo las mías (propietario = usuario con sesión)",
+      "get": "obtener una",
+      "create": "crear (propietario inyectado automáticamente)",
+      "update": "actualizar solo los campos listados",
+      "delete": "eliminar",
+      "auth": "este recurso requiere sesión"
+    },
+    "runtimeTitle": "4. Reglas del runtime",
+    "runtimeBody": "El runtime interpreta una especificación verificada así:",
+    "runtimeRules": [
+      "Autenticación — con auth, una petición sin cabecera x-user-id recibe 401.",
+      "Propietario automático — al crear, el campo ref de propietario se rellena con el usuario con sesión (no hace falta en el cuerpo).",
+      "Resolución de propietario — el ref marcado con *; si no, el único ref; varios refs → AMBIGUOUS_OWNER al verificar.",
+      "list:mine — devuelve solo las filas cuyo propietario es el usuario actual.",
+      "Validación — create/update imponen obligatorio, tipo y máximo (REQUIRED / BAD_TYPE / TOO_LONG / TOO_BIG).",
+      "Bloqueo de campo — cambiar un campo que no está en update:[...] devuelve 403 FIELD_LOCKED.",
+      "Valores por defecto — se aplica el valor = si falta; now pasa a ser la marca de tiempo ISO actual."
+    ],
+    "errorsTitle": "5. Códigos de error del verificador",
+    "errorsBody": "aix check juzga una especificación 100% por máquina. Si no devuelve errores, el runtime garantiza que la ejecutará. Si falla, dice exactamente dónde y por qué — errores estructurados que una IA lee y corrige sola.",
+    "colCode": "código",
+    "colCatches": "qué detecta",
+    "errors": {
+      "DUP_FIELD": "nombre de campo duplicado en una entidad",
+      "BAD_REF": "ref:X pero X no es una entidad definida",
+      "BAD_DEFAULT": "el valor por defecto no coincide con el tipo (=now solo en ts)",
+      "BAD_MAX": "<= usado en un tipo distinto de str/int",
+      "BAD_OWNER": "* usado en un campo que no es ref",
+      "MULTI_OWNER": "más de un propietario * en una entidad",
+      "NO_ENTITY": "la ruta apunta a una entidad no definida",
+      "BAD_UPDATE": "update:[X] donde X no es un campo real",
+      "NO_OWNER": "list:mine pero no existe ningún campo ref",
+      "AMBIGUOUS_OWNER": "list:mine con varios refs y sin marca *",
+      "MINE_NO_AUTH": "list:mine sin auth — no hay «yo»"
+    }
+  },
+  "footer": {
+    "tagline": "Un formato de ejecución nativo para IA. La IA emite una especificación pequeña y verificable; un runtime fijo la interpreta. Sin código generado, sin intervención humana.",
+    "builtWith": "Node puro · sin dependencias · en memoria (v0)",
+    "license": "MIT",
+    "repo": "Repositorio",
+    "spec": "Especificación",
+    "designNote": "Diseño: dell-1996 (era de catálogo)"
+  }
+}

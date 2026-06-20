@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/*
+  Dell 1996 design tokens (from DESIGN.md).
+  Catalog-era enterprise web: literal black page frame, flat color-block
+  "ribbon cards" in eight catalog tints, Arial Black display, Times Roman body,
+  Helvetica bold UI, 0px radius everywhere, hard 1px borders, NO soft shadows.
+*/
+@theme {
+  --color-primary: #e91d2a; /* Dell red — CTA + phone callout ONLY */
+  --color-ink: #000000;
+  --color-canvas: #ffffff;
+  --color-yellow: #fcc20f; /* sticker yellow */
+  --color-purple: #6a26a4;
+  --color-link: #0000ee; /* classic Mosaic/Netscape link blue */
+
+  /* Eight ribbon-card catalog tints */
+  --color-olive: #8e8a25;
+  --color-sage: #b3bd95;
+  --color-salmon: #d77a7a;
+  --color-peach: #e6915d;
+  --color-lime: #c0d4a7;
+  --color-sky: #9ab6c8;
+  --color-steel: #a5b8c0;
+  --color-periwinkle: #8c9ae0;
+
+  /* System font stacks — no webfonts in 1996 (CJK falls back to OS fonts) */
+  --font-display: "Arial Black", "Arial Bold", Arial, Helvetica, sans-serif;
+  --font-ui: Helvetica, Arial, "Helvetica Neue", system-ui, sans-serif;
+  --font-body: "Times New Roman", Times, Georgia, serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Courier New", monospace;
+
+  --radius-none: 0px;
+}
+
+html {
+  background: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  line-height: 1.4;
+}
+
+/* Inline anchors: classic underlined Mosaic blue */
+.prose-link {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+/* Hard-edge bevel for stickers/photos — never a soft shadow */
+.bevel {
+  box-shadow: 2px 2px 0 0 var(--color-ink);
+}
+
+/* Code: monospace inside a hard black box */
+pre,
+code,
+kbd {
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: var(--color-yellow);
+  color: var(--color-ink);
+}

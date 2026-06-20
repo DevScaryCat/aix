@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "title": "aix — AI 네이티브 실행 포맷",
+    "description": "AI가 토큰 몇 분의 일로 작성하고, 기계가 정확성을 증명하며, 사람 개입 없이 돌아가는 백엔드. AI는 검증 가능한 작은 스펙만 내놓고, 고정 런타임이 그것을 해석한다."
+  },
+  "nav": {
+    "home": "홈",
+    "docs": "명세",
+    "github": "GitHub",
+    "language": "언어"
+  },
+  "hero": {
+    "wordmark": "aix",
+    "tagline": "AI 네이티브 실행 포맷",
+    "lead": "Next.js/React 스택보다 토큰을 몇 분의 일만 써서 AI가 작성하고, 사람이 아니라 기계가 정확성을 증명하며, 사람 개입 0으로 돌아가는 백엔드.",
+    "sub": "AI는 if / for / 함수를 절대 쓰지 않는다. 짧은 선언형 스펙만 쓴다. 신뢰된 고정 런타임이 그걸 실행하는 법을 이미 알고 있으므로, 검증 대상은 무한한 코드가 아니라 작은 닫힌 스펙이다. 그래서 검증기가 100% 결정론적일 수 있다.",
+    "ctaDocs": "명세 읽기",
+    "ctaGithub": "GitHub에서 보기",
+    "sticker": "v0 · 의존성 0"
+  },
+  "pipeline": {
+    "title": "동작 원리",
+    "nl": "자연어",
+    "nlNote": "사람이 원하는 것",
+    "spec": ".aix 스펙",
+    "specNote": "AI가 코드가 아니라 작은 스펙을 쓴다",
+    "verify": "검증기",
+    "verifyNote": "결정론적 · 100% 기계 판정",
+    "runtime": "라이브 API",
+    "runtimeNote": "런타임이 스펙을 해석한다 — 생성된 코드는 없다",
+    "rejected": "거부 → 구조화된 오류 → AI가 스스로 고침",
+    "accepted": "통과"
+  },
+  "blog": {
+    "title": "블로그 백엔드 전체",
+    "lead": "이게 \"소스 코드\" 전부다. 세 줄이 인증 게이트 라우트, 소유자 자동 주입, list:mine 스코핑, 길이 검증, 필드 단위 수정 잠금이 된다.",
+    "caption": "examples/blog.aix"
+  },
+  "perf": {
+    "title": "성능 — 주장이 아니라 측정",
+    "subtitle": "같은 CRUD 백엔드(인증, 소유권 스코핑, 검증, 필드 잠금 수정)를 두 방식으로: 관용적 Next.js(라우트 핸들러 + zod + prisma) vs .aix 스펙. 직접 재현: node bench/run.mjs.",
+    "tokensTitle": "백엔드 전체를 정의하는 토큰 수",
+    "linesTitle": "소스 라인 수",
+    "lowerBetter": "3개 시나리오 합산 · 낮을수록 좋음",
+    "fewer": "더 적음",
+    "tableTitle": "시나리오별 (정확값)",
+    "colScenario": "시나리오",
+    "colMetric": "지표",
+    "colRatio": "aix 우위",
+    "metricTokens": "추정 토큰",
+    "metricLines": "라인",
+    "metricFiles": "파일",
+    "honestyTitle": "정직성 노트 — 꼭 읽으세요",
+    "honesty": [
+      "추정 토큰 = 글자수 ÷ 4 — 흔한 어림법이지 정확한 토크나이저 값이 아니다. 글자수·라인수 원본은 정확하므로 비율은 어떤 토크나이저에서도 유지된다. 차이는 어쨌든 한 자릿수 배율이 아니다.",
+      "Next.js 코드는 실제이고 군더더기 없이 짰다 — 격차를 부풀리려는 패딩 없음.",
+      "아직 측정 안 함: 첫 시도 통과율, 재시도/사람 개입 횟수. 실제 LLM 실행이 필요하다 — 가짜 수치 없음.",
+      "저장소는 인메모리. v0 개념 증명이지 프로덕션 아님."
+    ]
+  },
+  "verifier": {
+    "title": "사람이 디버깅할 버그를 검증기가 잡아낸다",
+    "lead": "examples/broken.aix에는 버그가 셋 있다. check가 정확한 위치와 함께 전부 찾아낸다 — AI가 사람 없이 스스로 닫는 루프.",
+    "caption": "examples/broken.aix",
+    "errorsCaption": "node src/cli.mjs check examples/broken.aix"
+  },
+  "usage": {
+    "title": "사용법",
+    "requires": "Node 18+ 필요. 의존성 0.",
+    "clone": "클론",
+    "step1": "스펙을 기계 검증 — 결정론적, 사람 불필요",
+    "step1Out": "→ { \"ok\": true, \"entities\": 2, \"routes\": 1 }",
+    "step2": ":8787에 라이브 API로 실행",
+    "liveTitle": "그다음 라이브 API 호출 — 런타임이 인증·소유권·검증을 강제한다",
+    "curl1": "로그인 없음 → 거부",
+    "curl2": "로그인됨 → 소유자 + 타임스탬프 자동 채움",
+    "curl3": "list:mine → 내 행만",
+    "curl4": "스펙이 노출하지 않은 필드 수정 → 잠김"
+  },
+  "docs": {
+    "title": "aix 명세",
+    "subtitle": "aix는 AI가 쓰고 기계가 검증하는 백엔드다. 사람도 읽을 수 있지만 1차 사용자는 AI다. 엔티티(데이터 모양)와 라우트(노출할 동작)만 선언하면 고정 런타임이 실제 CRUD API로 해석한다. 생성되는 코드는 없다.",
+    "backHome": "← 홈",
+    "structureTitle": "1. 전체 구조",
+    "structureBody": "한 줄에 한 선언, # 뒤는 주석. 선언은 딱 두 종류:",
+    "entityComment": "Entity — 데이터 모양",
+    "routeComment": "Route — 노출할 CRUD 동작",
+    "entityTitle": "2. 엔티티 (E)",
+    "entityBody": "필드는 쉼표로 구분. 각 필드는 고정된 순서를 따라야 기계가 100% 결정론적으로 파싱할 수 있다:",
+    "fieldGrammar": "이름:타입[:참조][!][*][<=수][=기본값]",
+    "partsTitle": "필드 구성 (왼쪽부터)",
+    "colPart": "부분",
+    "colMeaning": "의미",
+    "parts": {
+      "name:type": "필드 이름과 타입 (필수)",
+      ":ref": "ref 타입일 때 가리킬 엔티티",
+      "!": "필수 (없으면 거부)",
+      "*": "소유자 표시 (ref에만)",
+      "<=n": "최대 길이(str) / 최댓값(int)",
+      "=default": "기본값"
+    },
+    "typesTitle": "타입",
+    "colType": "타입",
+    "types": {
+      "str": "문자열",
+      "int": "정수",
+      "bool": "참 / 거짓",
+      "ts": "타임스탬프 (=now는 생성 시각 기록)",
+      "ref": "다른 엔티티 참조 (ref:<엔티티>)"
+    },
+    "routesTitle": "3. 라우트 (R)",
+    "routesBody": "엔티티는 이미 E로 정의돼 있어야 한다. 가능한 동작:",
+    "colOp": "동작",
+    "colHttp": "HTTP",
+    "ops": {
+      "list": "전체 목록",
+      "list:mine": "내 것만 (소유자 = 로그인 유저)",
+      "get": "하나 조회",
+      "create": "생성 (소유자 자동 주입)",
+      "update": "나열한 필드만 수정",
+      "delete": "삭제",
+      "auth": "이 리소스는 로그인 필요"
+    },
+    "runtimeTitle": "4. 런타임 동작 규칙",
+    "runtimeBody": "검증을 통과한 스펙을 런타임이 이렇게 해석한다:",
+    "runtimeRules": [
+      "인증 — auth가 있으면 x-user-id 헤더 없는 요청은 401.",
+      "소유자 자동 주입 — create 시 소유자 ref 필드를 로그인 유저로 채움 (본문에 없어도 됨).",
+      "소유자 결정 — *로 표시된 ref, 없으면 단일 ref. 여러 개면 검증 시 AMBIGUOUS_OWNER.",
+      "list:mine — 소유자가 현재 유저인 행만 반환.",
+      "검증 — create/update가 필수·타입·최댓값을 강제 (REQUIRED / BAD_TYPE / TOO_LONG / TOO_BIG).",
+      "필드 잠금 — update:[...]에 없는 필드를 바꾸면 403 FIELD_LOCKED.",
+      "기본값 — 없으면 = 기본값 적용. now는 현재 ISO 타임스탬프."
+    ],
+    "errorsTitle": "5. 검증기 오류 코드",
+    "errorsBody": "aix check가 스펙을 100% 기계로 판정한다. 오류가 없으면 런타임 실행이 보장된다. 실패하면 어디가 왜 틀렸는지 정확히 알려준다 — AI가 읽고 스스로 고치는 구조화된 오류.",
+    "colCode": "코드",
+    "colCatches": "잡는 것",
+    "errors": {
+      "DUP_FIELD": "한 엔티티에 중복 필드 이름",
+      "BAD_REF": "ref:X인데 X가 정의된 엔티티가 아님",
+      "BAD_DEFAULT": "기본값이 필드 타입과 안 맞음 (=now는 ts에만)",
+      "BAD_MAX": "<=를 str/int 아닌 타입에 사용",
+      "BAD_OWNER": "*를 ref 아닌 필드에 사용",
+      "MULTI_OWNER": "한 엔티티에 * 소유자가 둘 이상",
+      "NO_ENTITY": "라우트가 정의 안 된 엔티티를 가리킴",
+      "BAD_UPDATE": "update:[X]의 X가 실제 필드가 아님",
+      "NO_OWNER": "list:mine인데 ref 필드가 하나도 없음",
+      "AMBIGUOUS_OWNER": "list:mine인데 ref가 여러 개고 * 표시 없음",
+      "MINE_NO_AUTH": "list:mine인데 auth 없음 — \"나\"를 알 수 없음"
+    }
+  },
+  "footer": {
+    "tagline": "AI 네이티브 실행 포맷. AI는 검증 가능한 작은 스펙을 내놓고 고정 런타임이 해석한다. 생성된 코드 없음, 사람 개입 없음.",
+    "builtWith": "순수 Node · 의존성 0 · 인메모리 (v0)",
+    "license": "MIT",
+    "repo": "저장소",
+    "spec": "명세",
+    "designNote": "디자인: dell-1996 (카탈로그 시대)"
+  }
+}
