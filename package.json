@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "description": "An AI-native execution format. AI emits a tiny verifiable spec; a fixed runtime interprets it. No generated code, no human in the loop.",
   "type": "module",
-  "bin": { "aix": "src/cli.mjs" },
+  "bin": { "aix": "src/cli.mjs", "aix-mcp": "mcp/server.mjs" },
   "scripts": {
     "check": "node src/cli.mjs check examples/blog.aix",
     "run": "node src/cli.mjs run examples/blog.aix",
+    "mcp": "node mcp/server.mjs",
+    "test:lint": "node bench/lint-test.mjs",
+    "test:mcp": "node mcp/test.mjs",
+    "selftest": "node bench/selftest.mjs",
     "bench": "node bench/run.mjs",
     "bench:keys": "node --env-file=.env bench/check-keys.mjs",
     "bench:llm": "node --env-file=.env bench/llm-run.mjs"

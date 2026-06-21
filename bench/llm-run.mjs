@@ -40,6 +40,10 @@ import {
 
 const TRIALS = Number(process.env.AIX_BENCH_TRIALS) || 2;
 const MAX_ATTEMPTS = Number(process.env.AIX_BENCH_MAX_ATTEMPTS) || 4;
+// Equal output budget for BOTH arms. An asymmetric cap (aix 2048 vs imperative
+// 8192) would let a skeptic call the comparison rigged; the aix arm simply
+// won't use most of it. Fewer tokens must be a RESULT, not an imposed ceiling.
+const MAX_OUTPUT_TOKENS = Number(process.env.AIX_BENCH_MAX_TOKENS) || 8192;
 const tmpDir = mkdtempSync(path.join(os.tmpdir(), "aix-bench-"));
 
 const failLines = (result) =>
@@ -60,7 +64,7 @@ async function runAixTrial(provider, key, model, sc) {
         model,
         system: AIX_SYSTEM,
         prompt: buildAixPrompt(sc, feedback),
-        maxTokens: 2048,
+        maxTokens: MAX_OUTPUT_TOKENS,
       }));
     } catch (e) {
       return { error: e.message, attempts: attempt, passedFinal: false, attempt1 };
@@ -112,7 +116,7 @@ async function runImperativeTrial(provider, key, model, sc) {
         model,
         system: IMPERATIVE_SYSTEM,
         prompt: buildImperativePrompt(sc, feedback),
-        maxTokens: 8192,
+        maxTokens: MAX_OUTPUT_TOKENS,
       }));
     } catch (e) {
       return { error: e.message, attempts: attempt, passedFinal: false, attempt1 };

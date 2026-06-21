@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs";
 import { parse, ParseError } from "./parse.mjs";
 import { verify } from "./verify.mjs";
+import { lint } from "./lint.mjs";
 import { createServer } from "./runtime.mjs";
 
 const [cmd, file, portArg] = process.argv.slice(2);
@@ -31,10 +32,16 @@ if (errors.length) {
   process.exit(1);
 }
 
+// Advisory only — lint NEVER changes ok or the exit code. It flags intent-level
+// risks (e.g. a cross-owner read leak) the total verifier cannot reject.
+const warnings = lint(ast);
+
 if (cmd === "check") {
   const routes = Object.keys(ast.routes).length;
   const entities = Object.keys(ast.entities).length;
-  console.log(JSON.stringify({ ok: true, entities, routes }, null, 2));
+  const out = { ok: true, entities, routes };
+  if (warnings.length) out.warnings = warnings;
+  console.log(JSON.stringify(out, null, 2));
   process.exit(0);
 }
 
@@ -47,6 +54,7 @@ if (cmd === "run") {
       const ops = [r.list && "list", r.get && "get", r.create && "create", r.update && "update", r.delete && "delete"].filter(Boolean);
       console.error(`  /${r.entity}  [${ops.join(" ")}]${r.auth ? "  @auth" : ""}`);
     }
+    for (const w of warnings) console.error(`  ⚠ ${w.code} ${w.where}: ${w.message}`);
   });
   process.exit; // keep alive
 } else {
