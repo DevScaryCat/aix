@@ -20,7 +20,13 @@
 //   E post title:str!<=200, body:str!, status:enum[draft|published]=draft, author>user, created@
 //   R post list:mine, get, create, update:[title,body,status], delete
 
-const TYPES = new Set(["str", "int", "bool", "ts", "ref"]);
+export const TYPES = new Set(["str", "int", "bool", "ts", "ref"]);
+
+// The route-op vocabulary — the SINGLE SOURCE the GBNF/grammar artifact is
+// generated from (tools/gen-grammar.mjs). KEEP IN SYNC with parseRoute() below;
+// bench/grammar-test.mjs round-trips each op through parse() so drift is caught.
+export const SIMPLE_OPS = ["list:mine", "list", "get", "create", "delete", "auth", "private", "page"];
+export const PARAM_OPS = ["update", "filter", "sort"]; // take a [list] or :field
 
 export class ParseError extends Error {
   constructor(message, line) {

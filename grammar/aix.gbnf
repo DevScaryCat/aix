@@ -1,0 +1,38 @@
+# aix grammar (GBNF) — GENERATED from src/parse.mjs constants. DO NOT EDIT BY HAND.
+# Regenerate:  node tools/gen-grammar.mjs
+# Enforces SYNTAX only; src/verify.mjs is the semantic gate (refs, owners, enums).
+# Invariant: bracket lists NEVER nest — that is what keeps this grammar regular
+# and GBNF-compilable. Any future nested list would break this equivalence.
+
+root    ::= ws decl (nl+ decl)* ws nl?
+decl    ::= entity | route | comment
+
+entity  ::= "E" sp name sp field (sp? "," sp? field)*
+route   ::= "R" sp name sp op (sp? "," sp? op)*
+
+field   ::= name ">" name excl? (own | via)?                 # ref shorthand: author>user, task>project^
+          | name "@" excl?                                   # ts=now shorthand: created@
+          | name ":enum[" name ("|" name)* "]" excl? ("=" word)?
+          | name ":" type (":" name)? excl? own? uniq? max? def?
+
+type    ::= "str" | "int" | "bool" | "ts" | "ref"
+
+op      ::= "list:mine" | "private" | "create" | "delete" | "list" | "auth" | "page" | "get"
+          | "update:[" name (sp? "," sp? name)* "]"
+          | "filter:[" name (sp? "," sp? name)* "]"
+          | "sort:" name (":" ("asc" | "desc"))?
+
+excl    ::= "!"
+own     ::= "*"
+via     ::= "^"
+uniq    ::= "~"
+max     ::= "<=" int
+def     ::= "=" word
+comment ::= "#" [^\n]*
+
+name    ::= [a-zA-Z_] [a-zA-Z0-9_]*
+word    ::= [a-zA-Z0-9_.+-]+
+int     ::= [0-9]+
+sp      ::= " "+
+ws      ::= [ \t]*
+nl      ::= "\n"

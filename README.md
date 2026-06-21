@@ -194,6 +194,11 @@ e.g. `OWNED_READ_OPEN` (a plain `list` on an owner-scoped entity leaks every
 user's rows) and `OPEN_MUTATION` (`update`/`delete` with no auth). They're a
 **separate channel** from the verifier, so `pass == runnable` stays total.
 
+**Constrained decoding:** [`grammar/aix.gbnf`](grammar/aix.gbnf) is *generated*
+from the parser's vocabulary (`node tools/gen-grammar.mjs`) — never hand-written,
+so it can't drift. A GBNF-capable runtime (llama.cpp, vLLM) can make a
+*syntactically* invalid spec unsamplable; the verifier still does the semantics.
+
 ## Docs
 
 - **[SPEC.md](SPEC.md)** — full `.aix` grammar, types, route ops, runtime rules,
@@ -210,6 +215,7 @@ Pure Node, zero dependencies, in-memory storage (v0).
 - [`src/runtime.mjs`](src/runtime.mjs) — interprets a verified AST as a live API
 - [`src/cli.mjs`](src/cli.mjs) — `check` / `run`
 - [`mcp/server.mjs`](mcp/server.mjs) — zero-dep MCP server for the in-loop model
+- [`tools/gen-grammar.mjs`](tools/gen-grammar.mjs) — emits [`grammar/aix.gbnf`](grammar/aix.gbnf) from the parser vocabulary
 
 ## Roadmap
 
