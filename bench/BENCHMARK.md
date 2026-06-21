@@ -53,22 +53,32 @@ come from generating both versions with a **live LLM** and grading the running
 result against the shared HTTP contract (`bench/contract.mjs`). Both arms get an
 **equal** 8192-token budget. Run it: `node --env-file=.env bench/llm-run.mjs`.
 
-**Claude Opus 4.8 · 3 scenarios × 2 trials (n=6 per arm):**
+**3 scenarios × 2 trials (n=6 per arm). Claude Opus 4.8 (frontier):**
 
-| arm        | pass@1 | silent-bug@1 | mean attempts | output tokens | wall-clock |
-|------------|-------:|-------------:|--------------:|--------------:|-----------:|
-| **aix**    |    6/6 |      **0/6** |           1.0 |        **78** |   **1.7s** |
-| imperative |    5/6 |      **1/6** |           1.2 |          2329 |      19.7s |
+| arm        | pass@1 | silent-bug@1 | mean attempts | solved | output tokens | wall-clock |
+|------------|-------:|-------------:|--------------:|-------:|--------------:|-----------:|
+| **aix**    |    6/6 |      **0/6** |           1.0 |    6/6 |        **78** |   **1.7s** |
+| imperative |    5/6 |      **1/6** |           1.2 |    6/6 |          2329 |      19.7s |
 
-The hypothesis held — and sharpened:
+**Claude Haiku 4.5 (cheap):**
 
-> A **top** model writing Node code one-shots easy CRUD, but at n=6 still shipped
-> a **silent** auth/ownership bug 1-in-6 (a `2xx`-but-wrong defect a human must
-> catch). aix's grammar cannot express that bug, so silent-bug@1 is 0 — while
-> using **~30× fewer output tokens** and running **~11× faster**.
+| arm        | pass@1 | silent-bug@1 | mean attempts | solved  | output tokens | wall-clock |
+|------------|-------:|-------------:|--------------:|--------:|--------------:|-----------:|
+| **aix**    |    6/6 |      **0/6** |           1.0 | **6/6** |        **68** |   **1.0s** |
+| imperative |    4/6 |      **1/6** |           2.0 | **4/6** |          4770 |      22.0s |
 
-**Honest bounds:** n=6 and one model, so the 1/6 silent-bug figure is directional
-(the token/latency gap is structural). All scenarios are owner-scoped CRUD —
-inside the closed grammar by construction. Gemini 2.5 Flash was excluded: its
-free-tier rate-limits (429) invalidated the run. Next: harder multi-entity
-scenarios and cheaper models, where the silent-bug gap should widen.
+The hypothesis held — and the gap **widens as the model gets cheaper**:
+
+> A *frontier* model writing Node code one-shots easy CRUD but still ships a
+> **silent** auth/ownership bug 1-in-6. A *cheap* model writing code is worse —
+> Haiku solved only **4/6** even with retries and burned 4770 tokens. But the
+> **same cheap model on aix solved 6/6 with zero silent bugs in 68 tokens** — so
+> Haiku + aix is *more correct and ~30× leaner than Opus writing the backend as
+> code*. aix supplies the correctness; the model only has to declare intent.
+
+**Honest bounds:** n=6 per cell, two models — the 1/6 silent-bug figures are
+directional, the token/latency gaps are structural. All scenarios are owner-scoped
+CRUD, inside the closed grammar by construction. Gemini 2.5 Flash was excluded:
+free-tier rate-limits (429) invalidated its run. Next: harder multi-entity
+scenarios (parent-ownership), where even a frontier model's silent-bug rate should
+climb.

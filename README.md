@@ -65,22 +65,35 @@ loop: ask the **same top model** (Claude Opus 4.8) for the same backend two ways
 server (run → fix on failures) — both graded against the **same** HTTP behavioral
 contract. Reproduce: `node --env-file=.env bench/llm-run.mjs`.
 
-**Opus 4.8 · 3 scenarios × 2 trials (n=6/arm) · equal 8192-token budget:**
+**Two models, both arms, equal 8192-token budget · 3 scenarios × 2 trials (n=6/arm):**
+
+*Claude Opus 4.8 (frontier):*
 
 | arm        | pass@1 | silent-bug@1 | attempts | output tokens | wall-clock |
 |------------|-------:|-------------:|---------:|--------------:|-----------:|
 | **aix**    |    6/6 |      **0/6** |      1.0 |        **78** |   **1.7s** |
 | imperative |    5/6 |      **1/6** |      1.2 |          2329 |      19.7s |
 
-→ **~30× fewer output tokens, ~11× faster** — and the imperative arm shipped a
-**silent** auth/ownership bug 1-in-6 (returned `2xx` but did the wrong thing —
-the kind a human must catch). aix's grammar cannot express that bug.
+*Claude Haiku 4.5 (cheap):*
 
-*Honest bounds:* small sample (n=6, one model); the token/latency gap is
-structural and robust, the 1/6 silent-bug rate is directional, not a precise
-number. All three scenarios are owner-scoped CRUD — *inside* aix's closed grammar
-by construction; outside it (custom logic) aix doesn't apply. Gemini 2.5 Flash
-was dropped: free-tier rate-limits (429) invalidated its run.
+| arm        | pass@1 | silent-bug@1 | attempts | solved  | output tokens | wall-clock |
+|------------|-------:|-------------:|---------:|--------:|--------------:|-----------:|
+| **aix**    |    6/6 |      **0/6** |      1.0 | **6/6** |        **68** |   **1.0s** |
+| imperative |    4/6 |      **1/6** |      2.0 | **4/6** |          4770 |      22.0s |
+
+→ The gap **widens as the model gets cheaper.** Opus writing code one-shots most
+scenarios but still leaks a silent bug; **Haiku writing code solved only 4/6** (it
+couldn't produce a working backend for a third of them, even with retries) and
+burned 4770 tokens trying. **Haiku + aix solved 6/6, zero silent bugs, 68 tokens,
+1.0s** — so a *cheap* model on aix is **more correct and ~30× leaner than the
+frontier model writing the backend as code.** aix supplies the correctness the
+model doesn't have to.
+
+*Honest bounds:* n=6 per cell, two models; the token/latency gaps are structural
+and robust, the 1/6 silent-bug figures are directional, not precise rates. All
+scenarios are owner-scoped CRUD — *inside* aix's closed grammar by construction;
+outside it (custom logic) aix doesn't apply. Gemini 2.5 Flash was dropped:
+free-tier rate-limits (429) invalidated its run.
 
 ### Honesty notes (read these)
 
@@ -200,9 +213,10 @@ Pure Node, zero dependencies, in-memory storage (v0).
 
 ## Roadmap
 
-1. ✅ **LLM-in-the-loop benchmark** — measured (Opus 4.8): ~30× fewer output
-   tokens, ~11× faster, 0 vs 1/6 silent bugs. Next: harder multi-entity scenarios
-   and cheaper models, where the silent-bug gap should widen.
+1. ✅ **LLM-in-the-loop benchmark** — measured on Opus 4.8 *and* Haiku 4.5: a
+   cheap model + aix beats the frontier model writing code (6/6 vs 5/6, 0 vs 1/6
+   silent bugs, ~30× fewer tokens). Next: harder multi-entity scenarios
+   (parent-ownership), where even a frontier model's silent-bug rate should climb.
 2. ✅ **MCP server + Skill** — a top model emits a spec, gets verifier errors as a
    tool result, and self-corrects in-loop ([`mcp/`](mcp), [`skill/`](skill)).
 3. **Persistence** — swap in-memory for SQLite without touching any spec.
