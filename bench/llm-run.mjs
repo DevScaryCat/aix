@@ -56,18 +56,24 @@ const failLines = (result) =>
 async function runAixTrial(provider, key, model, sc) {
   let feedback = null;
   let attempt1 = null;
+  let outTok = 0; // cumulative output tokens across all attempts (the metric that bills)
+  let ms = 0; // cumulative model wall-clock
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     let text;
     try {
-      ({ text } = await callModel(provider, {
+      const t0 = Date.now();
+      let usage;
+      ({ text, usage } = await callModel(provider, {
         apiKey: key,
         model,
         system: AIX_SYSTEM,
         prompt: buildAixPrompt(sc, feedback),
         maxTokens: MAX_OUTPUT_TOKENS,
       }));
+      ms += Date.now() - t0;
+      outTok += usage?.output || 0;
     } catch (e) {
-      return { error: e.message, attempts: attempt, passedFinal: false, attempt1 };
+      return { error: e.message, attempts: attempt, passedFinal: false, attempt1, outTok, ms };
     }
     const spec = extractCode(text);
 
@@ -98,28 +104,34 @@ async function runAixTrial(provider, key, model, sc) {
       await new Promise((res) => server.close(res));
     }
     if (attempt === 1) attempt1 = { kind: "ran", pass: result.passed, silent: result.silent };
-    if (result.passed) return { passedFinal: true, attempts: attempt, attempt1 };
+    if (result.passed) return { passedFinal: true, attempts: attempt, attempt1, outTok, ms };
     feedback = "Behavioral test failures (adjust the spec to satisfy them):\n" + failLines(result);
   }
-  return { passedFinal: false, attempts: MAX_ATTEMPTS, attempt1 };
+  return { passedFinal: false, attempts: MAX_ATTEMPTS, attempt1, outTok, ms };
 }
 
 // ── imperative arm: model writes a Node server -> spawn -> contract ──
 async function runImperativeTrial(provider, key, model, sc) {
   let feedback = null;
   let attempt1 = null;
+  let outTok = 0;
+  let ms = 0;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     let text;
     try {
-      ({ text } = await callModel(provider, {
+      const t0 = Date.now();
+      let usage;
+      ({ text, usage } = await callModel(provider, {
         apiKey: key,
         model,
         system: IMPERATIVE_SYSTEM,
         prompt: buildImperativePrompt(sc, feedback),
         maxTokens: MAX_OUTPUT_TOKENS,
       }));
+      ms += Date.now() - t0;
+      outTok += usage?.output || 0;
     } catch (e) {
-      return { error: e.message, attempts: attempt, passedFinal: false, attempt1 };
+      return { error: e.message, attempts: attempt, passedFinal: false, attempt1, outTok, ms };
     }
     const code = extractCode(text);
     const file = path.join(tmpDir, `srv-${provider}-${sc.name}-${attempt}.mjs`);
@@ -146,10 +158,10 @@ async function runImperativeTrial(provider, key, model, sc) {
       try { rmSync(file); } catch { /* ignore */ }
     }
     if (attempt === 1) attempt1 = { kind: "ran", pass: result.passed, silent: result.silent };
-    if (result.passed) return { passedFinal: true, attempts: attempt, attempt1 };
+    if (result.passed) return { passedFinal: true, attempts: attempt, attempt1, outTok, ms };
     feedback = "Your server failed these behavioral checks. Fix them:\n" + failLines(result);
   }
-  return { passedFinal: false, attempts: MAX_ATTEMPTS, attempt1 };
+  return { passedFinal: false, attempts: MAX_ATTEMPTS, attempt1, outTok, ms };
 }
 
 function aggregate(trials) {
@@ -162,7 +174,11 @@ function aggregate(trials) {
   const meanAttempts = valid.length
     ? (valid.reduce((s, t) => s + (t.passedFinal ? t.attempts : MAX_ATTEMPTS), 0) / valid.length).toFixed(1)
     : "—";
-  return { n, errored, vN: valid.length, pass1, silent1, solved, meanAttempts };
+  // Cumulative OUTPUT tokens to solve (sum across all attempts) — the currency
+  // that actually bills and dominates latency. Mean over valid trials.
+  const meanOut = valid.length ? Math.round(valid.reduce((s, t) => s + (t.outTok || 0), 0) / valid.length) : "—";
+  const meanSec = valid.length ? (valid.reduce((s, t) => s + (t.ms || 0), 0) / valid.length / 1000).toFixed(1) : "—";
+  return { n, errored, vN: valid.length, pass1, silent1, solved, meanAttempts, meanOut, meanSec };
 }
 
 const pad = (s, w) => String(s).padEnd(w);
@@ -229,9 +245,9 @@ async function main() {
   for (const p of providers) {
     console.log(`\n${p.name}  (${p.model})`);
     console.log(
-      "  " + pad("arm", 12) + padL("pass@1", 8) + padL("silent@1", 10) + padL("attempts", 10) + padL("solved", 9),
+      "  " + pad("arm", 12) + padL("pass@1", 8) + padL("silent@1", 10) + padL("attempts", 10) + padL("solved", 9) + padL("out-tok", 9) + padL("sec", 7),
     );
-    console.log("  " + "-".repeat(47));
+    console.log("  " + "-".repeat(63));
     for (const arm of arms) {
       const a = aggregate(results[p.name][arm.key]);
       const denom = a.vN || a.n;
@@ -242,6 +258,8 @@ async function main() {
           padL(`${a.silent1}/${denom}`, 10) +
           padL(a.meanAttempts, 10) +
           padL(`${a.solved}/${denom}`, 9) +
+          padL(a.meanOut, 9) +
+          padL(a.meanSec, 7) +
           (a.errored ? `   (${a.errored} errored)` : ""),
       );
     }

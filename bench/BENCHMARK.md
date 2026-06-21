@@ -46,12 +46,29 @@ actually bite — wrong ownership filter, missing auth check, a validation rule
 that doesn't match the schema — compile fine and surface at runtime. A human
 debugs them.
 
-## What is NOT measured here (and why)
+## The live-model loop — now measured (`bench/llm-run.mjs`)
 
-First-try pass rate and retry count require generating both versions with a
-**live LLM** and running the results. That needs an API key and belongs in
-`bench/llm-run.mjs` (a stub, not faked numbers). The hypothesis to test there:
+First-try pass rate, silent-bug rate, attempts, **output tokens**, and latency
+come from generating both versions with a **live LLM** and grading the running
+result against the shared HTTP contract (`bench/contract.mjs`). Both arms get an
+**equal** 8192-token budget. Run it: `node --env-file=.env bench/llm-run.mjs`.
 
-> Next.js generation produces plausible-but-wrong code a human must debug.
-> aix generation, when wrong, is rejected by the verifier and the model fixes
-> itself — **human interventions trend to 0.**
+**Claude Opus 4.8 · 3 scenarios × 2 trials (n=6 per arm):**
+
+| arm        | pass@1 | silent-bug@1 | mean attempts | output tokens | wall-clock |
+|------------|-------:|-------------:|--------------:|--------------:|-----------:|
+| **aix**    |    6/6 |      **0/6** |           1.0 |        **78** |   **1.7s** |
+| imperative |    5/6 |      **1/6** |           1.2 |          2329 |      19.7s |
+
+The hypothesis held — and sharpened:
+
+> A **top** model writing Node code one-shots easy CRUD, but at n=6 still shipped
+> a **silent** auth/ownership bug 1-in-6 (a `2xx`-but-wrong defect a human must
+> catch). aix's grammar cannot express that bug, so silent-bug@1 is 0 — while
+> using **~30× fewer output tokens** and running **~11× faster**.
+
+**Honest bounds:** n=6 and one model, so the 1/6 silent-bug figure is directional
+(the token/latency gap is structural). All scenarios are owner-scoped CRUD —
+inside the closed grammar by construction. Gemini 2.5 Flash was excluded: its
+free-tier rate-limits (429) invalidated the run. Next: harder multi-entity
+scenarios and cheaper models, where the silent-bug gap should widen.

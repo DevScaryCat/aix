@@ -35,7 +35,8 @@ async function callAnthropic({ apiKey, model, system, prompt, maxTokens = 1024 }
     .filter((b) => b.type === "text")
     .map((b) => b.text)
     .join("");
-  return { text, model: data.model || model, stop: data.stop_reason };
+  const u = data.usage || {};
+  return { text, model: data.model || model, stop: data.stop_reason, usage: { input: u.input_tokens ?? null, output: u.output_tokens ?? null } };
 }
 
 async function callGemini({ apiKey, model, system, prompt, maxTokens = 1024 }) {
@@ -55,7 +56,8 @@ async function callGemini({ apiKey, model, system, prompt, maxTokens = 1024 }) {
   const data = await res.json();
   const parts = data.candidates?.[0]?.content?.parts || [];
   const text = parts.map((p) => p.text || "").join("");
-  return { text, model, finish: data.candidates?.[0]?.finishReason };
+  const u = data.usageMetadata || {};
+  return { text, model, finish: data.candidates?.[0]?.finishReason, usage: { input: u.promptTokenCount ?? null, output: u.candidatesTokenCount ?? null } };
 }
 
 // List Gemini models that support generateContent — handy when a model id 404s.
