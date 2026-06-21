@@ -54,9 +54,21 @@
     "honesty": [
       "tokens est. = caracteres ÷ 4 — la regla práctica habitual, no un recuento exacto de tokenizador. Los conteos de caracteres y líneas sí son exactos, así que la proporción se mantiene con cualquier tokenizador; la diferencia es de un orden de magnitud de todos modos.",
       "El código Next.js es real y está ajustado — sin relleno para inflar la diferencia.",
-      "Aún no medido: tasa de acierto al primer intento y número de reintentos / intervenciones humanas. Eso requiere una ejecución real con un LLM — sin cifras falsas.",
+      "Ahora medido (abajo): tasa de acierto al primer intento, tasa de bug silencioso, tokens de salida y latencia con un modelo real — claves reales, sin cifras falsas.",
       "El almacenamiento es en memoria; esto es una prueba de concepto v0, no producción."
     ]
+  },
+  "live": {
+    "title": "Medido con un modelo real",
+    "lead": "El tamaño en tiempo de definición es una cosa; la prueba real es el bucle completo. Pedimos el mismo backend al mismo modelo de dos formas — emitir una spec .aix (verificar → corregir → ejecutar) vs escribir un servidor Node — y evaluamos ambas contra un mismo contrato de comportamiento HTTP. n=6 por brazo, presupuesto de tokens igual.",
+    "colModel": "modelo",
+    "colArm": "vía",
+    "colPass": "pass@1",
+    "colSilent": "bug silencioso@1",
+    "colTok": "tokens de salida",
+    "colSec": "tiempo real",
+    "punchline": "Un modelo barato con aix supera a un modelo de frontera escribiendo código: Haiku + aix resolvió 6/6 sin bugs silenciosos en 68 tokens, mientras que Opus escribiendo Node soltó un bug de auth 1 de cada 6 y gastó 2329 tokens. aix aporta la corrección; el modelo solo declara la intención.",
+    "bounds": "Límites honestos: n=6, dos modelos, CRUD con dueño dentro de la gramática cerrada. Las brechas de tokens y latencia son estructurales; la tasa de bug silencioso 1/6 es orientativa. Gemini quedó excluido por límites de tasa del plan gratuito."
   },
   "verifier": {
     "title": "El verificador atrapa errores que de otro modo depuraría una persona",

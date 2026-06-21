@@ -54,9 +54,21 @@
     "honesty": [
       "est. tokens = chars ÷ 4 — the common rule of thumb, not an exact tokenizer count. The raw character and line counts are exact, so the ratio holds under any tokenizer; the gap is an order of magnitude regardless.",
       "The Next.js code is real and kept tight — no padding to inflate the gap.",
-      "Not measured yet: first-try pass rate and retry / human-intervention count. Those need a live LLM run — no fake numbers.",
+      "Now measured (below): first-try pass rate, silent-bug rate, output tokens, and latency from a live model — real keys, no fake numbers.",
       "Storage is in-memory; this is a v0 proof-of-concept, not production."
     ]
+  },
+  "live": {
+    "title": "Measured with a live model",
+    "lead": "Define-time size is one thing; the real test is the end-to-end loop. We asked the same model for the same backend two ways — emit an .aix spec (verify → fix → run) vs write a Node server — and graded both against one HTTP behavioral contract. n=6 per arm, equal token budget.",
+    "colModel": "model",
+    "colArm": "arm",
+    "colPass": "pass@1",
+    "colSilent": "silent bug@1",
+    "colTok": "output tokens",
+    "colSec": "wall-clock",
+    "punchline": "A cheap model on aix beats a frontier model writing code: Haiku + aix solved 6/6 with zero silent bugs in 68 tokens, while Opus writing Node shipped a silent auth bug 1-in-6 and spent 2329 tokens. aix supplies the correctness; the model only declares intent.",
+    "bounds": "Honest bounds: n=6, two models, owner-scoped CRUD inside the closed grammar. The token and latency gaps are structural; the 1/6 silent-bug rate is directional. Gemini was excluded — free-tier rate-limits."
   },
   "verifier": {
     "title": "The verifier catches bugs a human would otherwise debug",

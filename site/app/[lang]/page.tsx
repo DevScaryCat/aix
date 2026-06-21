@@ -9,21 +9,21 @@ import { Sticker } from "@/components/sticker";
 import { GITHUB_URL } from "@/components/banner";
 
 // ── Language-neutral content (code + exact numbers from README/SPEC) ──
-const BLOG_SPEC = `E user { name:str!, email:str! }
-E post { title:str!<=200, body:str!, published:bool=false, author:ref:user, created:ts=now }
-R post { list:mine, get, create, update:[title,body,published], delete, auth }`;
+const BLOG_SPEC = `E user name:str!, email:str!~
+E post title:str!<=200, body:str!, published:bool=false, author>user, created@
+R post list:mine, get, create, update:[title,body,published], delete`;
 
 const CLONE_CMD = `git clone https://github.com/DevScaryCat/aix
 cd aix`;
 const CHECK_CMD = `node src/cli.mjs check examples/blog.aix`;
 const RUN_CMD = `node src/cli.mjs run examples/blog.aix`;
 
-const BROKEN_SPEC = `E post { title:str!<=200, author:ref:user, created:ts=now }
-R post { list:mine, get, create, update:[titel], delete }`;
+const BROKEN_SPEC = `E post title:str!<=200, author>user, rank:int=high, created@
+R post list:mine, get, create, update:[titel], delete`;
 
-const VERIFIER_ERRORS = `{ "code": "BAD_REF",      "where": "post.author", "message": "ref target \\"user\\" is not a defined entity" }
-{ "code": "BAD_UPDATE",   "where": "R post",      "message": "update field \\"titel\\" is not a field of post" }
-{ "code": "MINE_NO_AUTH", "where": "R post",      "message": "list:mine needs \\"auth\\" — without login there is no \\"me\\"" }`;
+const VERIFIER_ERRORS = `{ "code": "BAD_REF",     "where": "post.author", "message": "ref target \\"user\\" is not a defined entity" }
+{ "code": "BAD_DEFAULT", "where": "post.rank",   "message": "int field default must be an integer" }
+{ "code": "BAD_UPDATE",  "where": "R post",      "message": "update field \\"titel\\" is not a field of post — did you mean \\"title\\"?" }`;
 
 const CURL_NOLOGIN = `curl -X POST localhost:8787/post -d '{"title":"hi","body":"x"}'`;
 const CURL_LOGIN = `curl -X POST localhost:8787/post -H 'x-user-id: chris' \\
@@ -38,6 +38,15 @@ const SCENARIOS = [
   { name: "todo", tokN: 876, tokA: 42, tokR: "20.9×", linN: 84, linA: 3, linR: "28.0×", filN: 5, filA: 1 },
   { name: "blog", tokN: 904, tokA: 51, tokR: "17.7×", linN: 88, linA: 3, linR: "29.3×", filN: 5, filA: 1 },
   { name: "shop", tokN: 1472, tokA: 79, tokR: "18.6×", linN: 140, linA: 5, linR: "28.0×", filN: 7, filA: 1 },
+];
+
+// Live-model loop — real numbers from `node --env-file=.env bench/llm-run.mjs`
+// (n=6 per arm, equal 8192-token budget). The `win` rows are aix.
+const LIVE_LOOP = [
+  { model: "Opus 4.8", arm: "aix", pass: "6/6", silent: "0/6", tok: 78, sec: "1.7s", win: true },
+  { model: "Opus 4.8", arm: "imperative", pass: "5/6", silent: "1/6", tok: 2329, sec: "19.7s", win: false },
+  { model: "Haiku 4.5", arm: "aix", pass: "6/6", silent: "0/6", tok: 68, sec: "1.0s", win: true },
+  { model: "Haiku 4.5", arm: "imperative", pass: "4/6", silent: "1/6", tok: 4770, sec: "22.0s", win: false },
 ];
 
 const BTN_PRIMARY =
@@ -225,6 +234,42 @@ export default async function Home({
             ))}
           </ul>
         </div>
+      </section>
+
+      {/* ── Live-model loop (measured) ── */}
+      <section className="mx-auto max-w-3xl px-4 py-8">
+        <SectionTitle tint="lime">{t.live.title}</SectionTitle>
+        <p className="mt-5 font-body text-[14px] leading-[1.55] text-ink">{t.live.lead}</p>
+        <div className="mt-4 overflow-x-auto border border-ink">
+          <table className="w-full border-collapse font-mono text-[12px]">
+            <thead>
+              <tr className="bg-peach text-ink">
+                <th className="border border-ink px-2 py-1 text-left font-ui font-bold uppercase">{t.live.colModel}</th>
+                <th className="border border-ink px-2 py-1 text-left font-ui font-bold uppercase">{t.live.colArm}</th>
+                <th className="border border-ink px-2 py-1 font-ui font-bold uppercase">{t.live.colPass}</th>
+                <th className="border border-ink px-2 py-1 font-ui font-bold uppercase">{t.live.colSilent}</th>
+                <th className="border border-ink px-2 py-1 font-ui font-bold uppercase">{t.live.colTok}</th>
+                <th className="border border-ink px-2 py-1 font-ui font-bold uppercase">{t.live.colSec}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {LIVE_LOOP.map((r, i) => (
+                <tr key={i} className={r.win ? "bg-yellow text-ink font-bold" : "bg-canvas text-ink"}>
+                  <td className="border border-ink px-2 py-1 font-ui">{r.model}</td>
+                  <td className="border border-ink px-2 py-1 font-ui">{r.arm}</td>
+                  <td className="border border-ink px-2 py-1 text-right">{r.pass}</td>
+                  <td className="border border-ink px-2 py-1 text-right">{r.silent}</td>
+                  <td className="border border-ink px-2 py-1 text-right">{r.tok}</td>
+                  <td className="border border-ink px-2 py-1 text-right">{r.sec}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 border border-ink bg-primary px-4 py-4">
+          <p className="font-body text-[15px] leading-[1.5] text-canvas sm:text-[16px]">{t.live.punchline}</p>
+        </div>
+        <p className="mt-3 font-body text-[13px] leading-[1.5] text-ink/80">{t.live.bounds}</p>
       </section>
 
       {/* ── Verifier demo ── */}
