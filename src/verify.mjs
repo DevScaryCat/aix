@@ -6,7 +6,7 @@
 //
 // Each error is { code, where, message } so an AI can read WHY its output was
 // rejected and fix exactly that, with zero human in the loop.
-import { ownerOf, hint } from "./owner.mjs";
+import { ownerOf, ownerVia, hint } from "./owner.mjs";
 
 export function verify(ast) {
   const errors = [];
@@ -61,6 +61,19 @@ export function verify(ast) {
     // at most one explicit owner per entity
     if (ent.fields.filter((f) => f.owner).length > 1)
       err("MULTI_OWNER", ent.name, `entity has more than one * owner field`);
+
+    // owner-via-parent (^): can't combine with a direct * owner, and the parent
+    // it points at must itself have a resolvable owner to inherit (single hop).
+    const viaField = ownerVia(ent);
+    if (viaField) {
+      if (ent.fields.some((f) => f.owner))
+        err("OWNER_VIA_CONFLICT", `${ent.name}.${viaField.name}`, `^ (owner-via-parent) cannot be combined with a * owner on the same entity`);
+      if (ent.fields.filter((f) => f.ownerVia).length > 1)
+        err("OWNER_VIA_CONFLICT", ent.name, `entity has more than one ^ owner-via-parent field`);
+      const parent = ast.entities[viaField.ref]; // BAD_REF already fires if undefined
+      if (parent && !ownerOf(parent))
+        err("NO_PARENT_OWNER", `${ent.name}.${viaField.name}`, `^ owner-via-parent points at "${viaField.ref}", which has no owner ref to inherit ownership from`);
+    }
   }
 
   for (const route of Object.values(ast.routes)) {
@@ -72,12 +85,14 @@ export function verify(ast) {
     const fieldNames = ent.fields.map((f) => f.name);
     const fieldSet = new Set(fieldNames);
     const ownerField = ownerOf(ent);
+    const viaField = ownerVia(ent);
 
-    // update:[...] must reference real fields — and never the owner ref
+    // update:[...] must reference real fields — and never the owner ref (direct
+    // or the owner-via-parent ref, both of which fix ownership at create time)
     if (route.update) {
       for (const fn of route.update) {
         if (!fieldSet.has(fn)) err("BAD_UPDATE", `R ${route.entity}`, `update field "${fn}" is not a field of ${route.entity}${hint(fn, fieldNames)}`);
-        else if (ownerField && fn === ownerField.name) err("OWNER_LOCKED", `R ${route.entity}`, `owner ref "${fn}" cannot be in update:[...] — ownership is immutable after create`);
+        else if ((ownerField && fn === ownerField.name) || (viaField && fn === viaField.name)) err("OWNER_LOCKED", `R ${route.entity}`, `owner ref "${fn}" cannot be in update:[...] — ownership is immutable after create`);
       }
     }
 
@@ -94,8 +109,10 @@ export function verify(ast) {
       else if (!["str", "int", "ts"].includes(sf.type)) err("SORT_FIELD", `R ${route.entity}`, `sort field "${route.sort}" must be str/int/ts`);
     }
 
-    // owner-scoped routes (list:mine / private) need an unambiguous owner ref
-    if (route.listMine || route.private) {
+    // owner-scoped routes (list:mine / private) need an unambiguous owner ref.
+    // An owner-via-parent (^) ref settles it unambiguously, so only plain
+    // direct-owner entities can be ambiguous.
+    if ((route.listMine || route.private) && !viaField) {
       const refs = ent.fields.filter((f) => f.type === "ref");
       const explicit = refs.filter((f) => f.owner);
       const which = route.listMine ? "list:mine" : "private";
@@ -108,9 +125,10 @@ export function verify(ast) {
     if (route.private && route.list && !route.listMine)
       err("PRIVATE_LIST", `R ${route.entity}`, `private scopes get/update/delete to the owner, but plain "list" returns every owner's rows — use "list:mine" (or drop "list")`);
 
-    // a create route whose entity has an owner ref needs auth (to inject the owner)
-    if (route.create && ownerField && !route.auth)
-      err("OWNER_CREATE_NO_AUTH", `R ${route.entity}`, `create on ${route.entity} has an owner ref "${ownerField.name}" — add auth (or list:mine) so the owner comes from the logged-in user`);
+    // a create route whose entity is owner-scoped (direct ref OR via-parent)
+    // needs auth — the owner is taken from / checked against the logged-in user
+    if (route.create && (ownerField || viaField) && !route.auth)
+      err("OWNER_CREATE_NO_AUTH", `R ${route.entity}`, `create on ${route.entity} is owner-scoped (${ownerField ? `owner ref "${ownerField.name}"` : `via parent "${viaField.name}"`}) — add auth (or list:mine) so ownership is tied to the logged-in user`);
   }
 
   return errors;

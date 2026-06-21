@@ -54,8 +54,12 @@ R post list:mine, get, create, update:[title,body,published], delete
 | 짧게 | 풀어쓰면 | 뜻 |
 |---|---|---|
 | `author>user` | `author:ref:user` | `>` 는 ref |
-| `buyer>user*` | `buyer:ref:user*` | ref + 소유자 |
+| `buyer>user*` | `buyer:ref:user*` | ref + 소유자 (직접) |
+| `task>project^` | — | `^` 는 **부모를 통한 소유** (한 홉) |
 | `created@` | `created:ts=now` | `@` 는 생성시각 자동 |
+
+`^`(owner-via-parent)는 "이 행은 자신이 가리키는 부모 행의 소유자에게 속한다"는 뜻이다.
+직접 소유자 필드가 없어도 부모를 통해 소유가 결정된다 (`*`와 동시 사용 불가).
 
 ### 타입
 
@@ -106,6 +110,9 @@ R <엔티티> <동작>, <동작>, ...
 - **소유자 자동 주입(강화)** — `create` 시 소유자 ref는 **항상 로그인 유저로 강제**된다
   (본문에 다른 소유자를 넣어도 무시 — 소유권 위조 불가).
 - **소유자 결정** — `*` 표시된 ref, 없고 ref가 1개면 그것, 여러 개면 검증 오류(`AMBIGUOUS_OWNER`).
+- **부모를 통한 소유(`^`)** — `task>project^`면 task의 소유자는 그 `project`의 소유자다(한 홉).
+  생성 시 **내가 소유한 부모 아래에만** 만들 수 있다 (아니면 `403 PARENT_FORBIDDEN`).
+  `list:mine`·단건 조회/수정/삭제도 모두 **부모 소유자** 기준으로 한정된다.
 - **`list:mine`** — 소유자 == 현재 유저인 행만 반환.
 - **`private`** — `get`/`update`/`delete`에서 소유자가 아니면 `404`(존재 노출 방지).
 - **참조 무결성** — 소유자가 아닌 `ref` 값은 **실제 존재하는 행**을 가리켜야 한다
@@ -141,6 +148,8 @@ R <엔티티> <동작>, <동작>, ...
 | `SORT_FIELD` | `sort:X` 가 실제 필드가 아니거나 str/int/ts가 아님 |
 | `NO_OWNER` | `list:mine`/`private` 인데 ref 필드가 하나도 없음 |
 | `AMBIGUOUS_OWNER` | `list:mine`/`private` 인데 ref가 여러 개고 `*` 표시 없음 |
+| `OWNER_VIA_CONFLICT` | `^`(부모소유)를 `*`(직접소유)와 함께 쓰거나 `^`가 2개 이상 |
+| `NO_PARENT_OWNER` | `^`가 가리키는 부모 엔티티에 상속할 소유자 ref가 없음 |
 
 > v0의 `MINE_NO_AUTH`는 사라졌다 — `list:mine`이 `auth`를 자동 함의하므로 더는 오류가 아니다.
 

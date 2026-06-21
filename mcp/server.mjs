@@ -82,7 +82,9 @@ const GRAMMAR = `aix — one declaration per line, "#" starts a comment, braces 
 field:  name:type[:refEntity][!][*][~][<=N][=default]
   types: str | int | bool | ts | ref
   !  required   *  owner (ref only)   ~  unique (str/int)   <=N max len/value   =d default
-  shorthands:  author>user (= author:ref:user) ·  buyer>user* (owner) ·  created@ (= created:ts=now)
+  shorthands:  author>user (= author:ref:user) ·  buyer>user* (direct owner)
+     ·  task>project^ (^ = owned VIA parent, one hop: only the parent's owner may touch the row)
+     ·  created@ (= created:ts=now)
   enum:  status:enum[draft|published]=draft
 
 op:  list | list:mine | get | create | update:[f1,f2] | delete | auth | private
@@ -98,7 +100,8 @@ Example (a whole blog backend):
 
 VERIFY ERROR codes (block; fix and re-emit): BAD_REF, DUP_FIELD, EMPTY_ENUM, BAD_DEFAULT,
   BAD_MAX, BAD_OWNER, BAD_UNIQUE, MULTI_OWNER, NO_ENTITY, BAD_UPDATE, OWNER_LOCKED,
-  FILTER_FIELD, SORT_FIELD, NO_OWNER, AMBIGUOUS_OWNER, PRIVATE_LIST, OWNER_CREATE_NO_AUTH.
+  FILTER_FIELD, SORT_FIELD, NO_OWNER, AMBIGUOUS_OWNER, PRIVATE_LIST, OWNER_CREATE_NO_AUTH,
+  OWNER_VIA_CONFLICT (^ with * or twice), NO_PARENT_OWNER (^ parent has no owner).
 ADVISORY WARNING codes (do NOT block; usually a permission mistake): OPEN_MUTATION
   (update/delete with no auth), OWNED_READ_OPEN (owned entity whose list/get isn't
   owner-scoped — likely a cross-owner data leak; use list:mine / private unless public).

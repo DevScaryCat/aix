@@ -1,0 +1,10 @@
+# Parent-ownership — a task is owned by whoever owns its project.
+# `project>project^`: the ^ means "owned VIA this parent" (one hop). The runtime
+# lets a user create/list/get/update/delete a task ONLY if they own its project.
+# This is the authz a hand-written backend silently gets wrong (it checks the
+# task, forgets to check the PARENT) — here the verifier + runtime enforce it.
+E user    name:str!, email:str!~
+E project title:str!<=120, owner>user, created@
+E task    title:str!<=200, done:bool=false, project>project^, created@
+R project list:mine, get, create, update:[title], delete
+R task    list:mine, get, create, update:[title,done], delete

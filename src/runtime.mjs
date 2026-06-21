@@ -2,7 +2,7 @@
 // There is NO generated code — this fixed, trusted interpreter walks the AST
 // per request. Storage is in-memory (zero deps) for v0.
 import http from "node:http";
-import { ownerOf } from "./owner.mjs";
+import { ownerOf, ownerVia } from "./owner.mjs";
 
 function nowISO() {
   return new Date().toISOString();
@@ -161,18 +161,33 @@ export function createServer(ast) {
     if (route.auth && currentUser === null) return send(res, 401, { error: "auth required (set x-user-id header)" });
 
     const ownerField = ownerOf(entity);
+    const viaField = ownerVia(entity);
+    const parentEntity = viaField ? ast.entities[viaField.ref] : null;
+    const parentOwnerField = parentEntity ? ownerOf(parentEntity) : null;
     const table = store[entityName];
 
+    // The owner id of a row, following one ownership hop when the entity is owned
+    // via a parent (^). For direct-owner entities it is just the owner field's
+    // value. The verifier guarantees the parent has an owner, so this is total.
+    const viaOwnerId = (row) => {
+      if (!viaField || !parentOwnerField) return null;
+      const p = store[viaField.ref]?.rows.get(Number(row[viaField.name]));
+      return p ? p[parentOwnerField.name] : null;
+    };
+    const ownerIdOf = (row) => (viaField ? viaOwnerId(row) : ownerField ? row[ownerField.name] : null);
+
     // single-row owner scope (private): not your row => 404 (no existence leak)
-    const denyPrivate = (row) =>
-      route.private && ownerField &&
-      (currentUser === null || row[ownerField.name] === null || String(row[ownerField.name]) !== String(currentUser));
+    const denyPrivate = (row) => {
+      if (!route.private || (!ownerField && !viaField)) return false;
+      const oid = ownerIdOf(row);
+      return currentUser === null || oid === null || String(oid) !== String(currentUser);
+    };
 
     // ---- LIST ----
     if (req.method === "GET" && !id) {
       if (!route.list) return send(res, 405, { error: "list not enabled" });
       let rows = [...table.rows.values()];
-      if (route.listMine && ownerField) rows = rows.filter((r) => String(r[ownerField.name]) === String(currentUser));
+      if (route.listMine && (ownerField || viaField)) rows = rows.filter((r) => String(ownerIdOf(r)) === String(currentUser));
       rows = applyQuery(rows, route, entity, url);
       return send(res, 200, rows);
     }
@@ -192,6 +207,13 @@ export function createServer(ast) {
       if (body === null) return send(res, 400, { error: "invalid JSON" });
       const built = buildRecord(entity, body, currentUser, store, entityName, true, null);
       if (!built.ok) return send(res, built.status, built.error);
+      // owner-via-parent: you may only create a row under a parent you own. The
+      // imperative arm's classic silent bug is forgetting THIS check.
+      if (viaField) {
+        const oid = viaOwnerId(built.value);
+        if (oid === null || String(oid) !== String(currentUser))
+          return send(res, 403, { code: "PARENT_FORBIDDEN", field: viaField.name, message: `you do not own the ${viaField.ref} this ${entityName} belongs to` });
+      }
       const newId = table.nextId++;
       const row = { id: newId, ...built.value };
       table.rows.set(newId, row);

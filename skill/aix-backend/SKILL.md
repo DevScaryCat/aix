@@ -33,7 +33,7 @@ R <entity> <op>, <op>, ...          # routes (exposed actions)
 **field** — `name:type[:refEntity][!][*][~][<=N][=default]`
 - types: `str | int | bool | ts | ref`
 - `!` required · `*` owner (ref only) · `~` unique (str/int) · `<=N` max len/value · `=d` default
-- shorthands: `author>user` (= `author:ref:user`) · `buyer>user*` (owner) · `created@` (= `created:ts=now`)
+- shorthands: `author>user` (= `author:ref:user`) · `buyer>user*` (direct owner) · `task>project^` (owned **via parent**, one hop) · `created@` (= `created:ts=now`)
 - enum: `status:enum[draft|published]=draft`
 
 **op** — `list | list:mine | get | create | update:[f1,f2] | delete | auth | private | filter:[..] | sort:f[:desc] | page`
@@ -60,6 +60,10 @@ owner immutable on update. Use these to express access correctly:
   resource is genuinely public (e.g. a shop catalog).
 - single-row reads/edits restricted to the owner → **`private`** (or `list:mine`, which
   implies it).
+- "a child belongs to whoever owns its parent" (task↔project, comment↔post you own) →
+  mark the parent ref with **`^`** (e.g. `task>project^`). The runtime then lets a user
+  create/list/get/edit/delete the child ONLY if they own the parent — don't hand-roll
+  this check, it's the one imperative code silently gets wrong.
 - never put the owner ref in `update:[...]` — ownership is immutable (the verifier rejects it).
 - `update`/`delete` without `auth` lets anyone modify any row → warning **`OPEN_MUTATION`**;
   add `auth` unless truly public.

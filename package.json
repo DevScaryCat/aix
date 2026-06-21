@@ -9,6 +9,7 @@
     "run": "node src/cli.mjs run examples/blog.aix",
     "mcp": "node mcp/server.mjs",
     "test:lint": "node bench/lint-test.mjs",
+    "test:via": "node bench/via-test.mjs",
     "test:mcp": "node mcp/test.mjs",
     "selftest": "node bench/selftest.mjs",
     "bench": "node bench/run.mjs",

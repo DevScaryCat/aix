@@ -35,11 +35,16 @@ function parseField(raw, lineNo) {
   let m = raw.match(/^(\w+)@(!)?$/);
   if (m) return { name: m[1], type: "ts", required: !!m[2], default: { special: "now" } };
 
-  // `>` shorthand:  author>user  ->  author:ref:user   (optional ! and *)
-  m = raw.match(/^(\w+)>(\w+)(!)?(\*)?$/);
+  // `>` shorthand:  author>user  ->  author:ref:user
+  //   `*` marks a DIRECT owner (a user ref holding the owner's id).
+  //   `^` marks owner-VIA-parent: this row is owned through the row it points
+  //   at, one hop (e.g. task>project^ — a task is owned by whoever owns its
+  //   project). Closed, finite: no expression, just a marker the runtime follows.
+  m = raw.match(/^(\w+)>(\w+)(!)?(\*)?(\^)?$/);
   if (m) {
     const field = { name: m[1], type: "ref", ref: m[2], required: !!m[3] };
     if (m[4]) field.owner = true;
+    if (m[5]) field.ownerVia = true;
     return field;
   }
 

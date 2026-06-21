@@ -11,7 +11,7 @@
 // "pass == runnable" is preserved byte-for-byte. Each lint is still a finite
 // first-order predicate over the SAME closed symbol table (no runtime data, no
 // heuristics on values), so the lint pass is itself total and deterministic.
-import { ownerOf } from "./owner.mjs";
+import { ownerOf, ownerVia } from "./owner.mjs";
 
 export function lint(ast) {
   const warnings = [];
@@ -20,7 +20,7 @@ export function lint(ast) {
   for (const route of Object.values(ast.routes)) {
     const ent = ast.entities[route.entity];
     if (!ent) continue; // unknown entity is already a hard verify error (NO_ENTITY)
-    const owner = ownerOf(ent);
+    const owner = ownerOf(ent) || ownerVia(ent); // direct or owned-via-parent
 
     // OPEN_MUTATION — update/delete with no login gate: any anonymous client can
     // modify or remove any row. (create+owner is already a hard verify ERROR via

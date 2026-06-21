@@ -2,11 +2,20 @@
 // never drift (a symbol the runtime dereferences must be one the verifier
 // pre-checked). This is the "verify/runtime lockstep by construction" rule.
 
-// The owner field of an entity: an explicit *-marked ref, else the single ref
-// if unique, else null (ambiguous — the verifier rejects routes that need it).
+// The DIRECT owner field of an entity: an explicit *-marked ref, else the single
+// ref if unique, else null (ambiguous — the verifier rejects routes that need
+// it). Excludes owner-via-parent (^) refs, which carry ownership by proxy rather
+// than holding the owner's id on the row itself.
 export function ownerOf(entity) {
-  const refs = entity.fields.filter((f) => f.type === "ref");
+  const refs = entity.fields.filter((f) => f.type === "ref" && !f.ownerVia);
   return refs.find((f) => f.owner) || (refs.length === 1 ? refs[0] : null);
+}
+
+// The owner-via-parent ref (^), if any: this row is owned through the row it
+// references, one hop (e.g. task>project^). The parent must itself have a direct
+// ownerOf — the verifier enforces that, so resolution is total and bounded.
+export function ownerVia(entity) {
+  return entity.fields.find((f) => f.type === "ref" && f.ownerVia) || null;
 }
 
 // Pure, bounded Levenshtein over declared symbols — powers "did you mean"
